@@ -1451,12 +1451,6 @@ def render_explainable_section(text, pred_label, show_header=True):
 
     return fig
 
-
-# =============================================================
-# ONE-TIME TOAST
-# =============================================================
-st.toast("Turning student feedback into actionable insights", icon="🎓")
-
 # =============================================================
 # SIDEBAR NAVIGATION
 # =============================================================
