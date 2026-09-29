@@ -2200,7 +2200,16 @@ elif app_mode == "Explainable AI (SHAP)":
             st.error("The sentiment model isn't loaded, so an explanation can't be generated right now.")
         else:
             pred_label, conf = predict_sentiment(text, model_type="Logistic Regression")
-            st.markdown(f"### Predicted Sentiment: **{pred_label}**")
+
+            # Sentiment result card — styled to match Single Review Analysis.
+            with st.container(border=True):
+                st.markdown("### Sentiment Prediction")
+                sentiment_emoji = SENT_EMOJI.get(pred_label, "😐")
+                st.markdown(f"## {sentiment_emoji} {pred_label.capitalize()}")
+                st.markdown(f"Confidence: **{conf:.2%}**")
+                st.progress(float(conf))
+
+            st.markdown("")
             render_explainable_section(text, pred_label, show_header=False)
             st.info("ℹ️ SHAP shows which words and tokens contributed to the model's prediction, helping you understand the reasoning behind each sentiment.")
 
