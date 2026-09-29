@@ -1954,6 +1954,14 @@ elif app_mode == "CSV Analysis":
             fig2.tight_layout()
             st.pyplot(fig2)
 
+            dl1, dl2 = st.columns(2)
+            with dl1:
+                st.download_button("⬇️ Download Overall Aspect Analysis", df_to_csv_bytes(overall_summary),
+                                    "overall_aspect_analysis.csv", "text/csv", use_container_width=True, on_click="ignore")
+            with dl2:
+                st.download_button("🖼️ Download Aspect Graph", fig_to_png_bytes(fig2),
+                                    "aspect_graph.png", "image/png", use_container_width=True, on_click="ignore")
+            
             # ---------------------------------------------------------
             # Overall suggestion for the complete CSV dataset
             # ---------------------------------------------------------
@@ -1969,14 +1977,6 @@ elif app_mode == "CSV Analysis":
                     "but aggregated across the uploaded CSV.\n\n"
                     + overall_suggestion
                 )
-
-            dl1, dl2 = st.columns(2)
-            with dl1:
-                st.download_button("⬇️ Download Overall Aspect Analysis", df_to_csv_bytes(overall_summary),
-                                    "overall_aspect_analysis.csv", "text/csv", use_container_width=True, on_click="ignore")
-            with dl2:
-                st.download_button("🖼️ Download Aspect Graph", fig_to_png_bytes(fig2),
-                                    "aspect_graph.png", "image/png", use_container_width=True, on_click="ignore")
 
             st.markdown(f'<p class="section-header">{hicon("cap")} Course-Wise Aspect Analysis</p>', unsafe_allow_html=True)
             st.caption("Aspect sentiment is grouped using the Course Name or Course ID available in the uploaded CSV.")
