@@ -2073,22 +2073,47 @@ elif app_mode == "CSV Analysis":
                 fig3.tight_layout()
                 st.pyplot(fig3)
 
+            st.markdown(f'<p class="section-header">{hicon("clipboard")} Detailed Aspect Results</p>', unsafe_allow_html=True)
+            detailed = aspect_df[["Course", "Aspect", "Sentiment", "Confidence", "Review"]] if course_col else aspect_df[["Aspect", "Sentiment", "Confidence", "Review"]]
+
+            # Combine the overall course-wise aspect summary with the detailed
+            # review-level fields. Each detailed row keeps its original Review
+            # and Confidence while also carrying the aggregate counts/sentiment
+            # for its Course + Aspect.
+            if course_col:
+                detailed_course_csv = detailed.merge(
+                    course_summary,
+                    on=["Course", "Aspect"],
+                    how="left"
+                )
+                detailed_course_csv = detailed_course_csv[
+                    ["Course", "Aspect", "Reviews", "Positive", "Neutral", "Negative",
+                     "Overall Sentiment", "Confidence", "Review", "Sentiment"]
+                ]
+            else:
+                detailed_course_csv = detailed.copy()
+
+            st.dataframe(detailed, use_container_width=True, hide_index=True)
+
+            # Keep the course-wise package download here, immediately after the
+            # Detailed Aspect Results section, as the single course-wise download.
+            if course_col:
                 course_package = make_zip_bytes({
-                    "course_wise_aspect_analysis.csv": df_to_csv_bytes(course_summary),
+                    "course_wise_detailed_aspect_analysis.csv": df_to_csv_bytes(detailed_course_csv),
+                    "course_wise_aspect_summary.csv": df_to_csv_bytes(course_summary),
                     f"{selected_course}_aspect_analysis.csv": df_to_csv_bytes(course_view),
                     f"{selected_course}_aspect_graph.png": fig_to_png_bytes(fig3),
                 })
-                st.download_button(
-                    "⬇️ Download Course-Wise Analysis Package", course_package,
-                    "course_wise_aspect_analysis.zip", "application/zip",
-                    use_container_width=True, on_click="ignore"
-                )
+            else:
+                course_package = make_zip_bytes({
+                    "detailed_aspect_results.csv": df_to_csv_bytes(detailed_course_csv),
+                })
 
-            st.markdown(f'<p class="section-header">{hicon("clipboard")} Detailed Aspect Results</p>', unsafe_allow_html=True)
-            detailed = aspect_df[["Course", "Aspect", "Sentiment", "Confidence", "Review"]] if course_col else aspect_df[["Aspect", "Sentiment", "Confidence", "Review"]]
-            st.dataframe(detailed, use_container_width=True, hide_index=True)
-            st.download_button("⬇️ Download Detailed Aspect Results", df_to_csv_bytes(detailed),
-                                "detailed_aspect_results.csv", "text/csv", use_container_width=True, on_click="ignore")
+            st.download_button(
+                "⬇️ Download Course-Wise Analysis Package", course_package,
+                "course_wise_analysis_package.zip", "application/zip",
+                use_container_width=True, on_click="ignore"
+            )
 
         st.markdown(f'<p class="section-header">{hicon("clipboard")} Analysis Results</p>', unsafe_allow_html=True)
         TRANSLATE_LIMIT = 200
