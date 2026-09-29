@@ -1203,11 +1203,6 @@ with st.sidebar:
     # ---------------------------------------------------------
     # ANALYSIS NAVIGATION
     # ---------------------------------------------------------
-    st.markdown(
-        '<div class="sidebar-section-label">ANALYSIS</div>',
-        unsafe_allow_html=True
-    )
-
     analysis_items = [
         ("Single Review Analysis", ":material/chat:"),
         ("CSV Analysis", ":material/description:"),
@@ -1230,11 +1225,6 @@ with st.sidebar:
     # ---------------------------------------------------------
     # TOOLS NAVIGATION
     # ---------------------------------------------------------
-    st.markdown(
-        '<div class="sidebar-section-label">TOOLS</div>',
-        unsafe_allow_html=True
-    )
-
     tool_items = [
         ("Explainable AI (SHAP)", ":material/lightbulb:"),
     ]
@@ -1255,11 +1245,6 @@ with st.sidebar:
     # ---------------------------------------------------------
     # INFORMATION
     # ---------------------------------------------------------
-    # st.markdown(
-    #     '<div class="sidebar-section-label">INFORMATION</div>',
-    #     unsafe_allow_html=True
-    # )
-
     info_items = [
         ("About", ":material/info:"),
     ]
