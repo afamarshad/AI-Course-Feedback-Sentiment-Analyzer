@@ -462,9 +462,9 @@ section.main .stDownloadButton > button:disabled {
    Keeps sidebar navigation buttons unchanged.
    ========================================================= */
 
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button {
+section.main:has(.csv-analysis-page-marker) .stButton > button,
+section.main:has(.csv-analysis-page-marker) .stDownloadButton > button,
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button {
     background: #2563EB !important;
     color: #FFFFFF !important;
     border: 1px solid #2563EB !important;
@@ -473,31 +473,31 @@ section.main .stDownloadButton > button:disabled {
     box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15) !important;
 }
 
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button p,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button p,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button p,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button [data-testid="stIconMaterial"],
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button [data-testid="stIconMaterial"],
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button [data-testid="stIconMaterial"],
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button svg,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button svg,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button svg {
+section.main:has(.csv-analysis-page-marker) .stButton > button p,
+section.main:has(.csv-analysis-page-marker) .stDownloadButton > button p,
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button p,
+section.main:has(.csv-analysis-page-marker) .stButton > button [data-testid="stIconMaterial"],
+section.main:has(.csv-analysis-page-marker) .stDownloadButton > button [data-testid="stIconMaterial"],
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button [data-testid="stIconMaterial"],
+section.main:has(.csv-analysis-page-marker) .stButton > button svg,
+section.main:has(.csv-analysis-page-marker) .stDownloadButton > button svg,
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button svg {
     color: #FFFFFF !important;
     fill: #FFFFFF !important;
     stroke: #FFFFFF !important;
 }
 
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button:hover,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button:hover,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:hover {
+section.main:has(.csv-analysis-page-marker) .stButton > button:hover,
+section.main:has(.csv-analysis-page-marker) .stDownloadButton > button:hover,
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:hover {
     background: #1D4ED8 !important;
     border-color: #1D4ED8 !important;
     color: #FFFFFF !important;
 }
 
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button:disabled,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button:disabled,
-[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:disabled {
+section.main:has(.csv-analysis-page-marker) .stButton > button:disabled,
+section.main:has(.csv-analysis-page-marker) .stDownloadButton > button:disabled,
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:disabled {
     background: #94A3B8 !important;
     border-color: #94A3B8 !important;
     color: #FFFFFF !important;
