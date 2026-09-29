@@ -1650,43 +1650,32 @@ if app_mode == "Single Review Analysis":
                 with st.container(border=True):
                     shap_fig = render_explainable_section(translated, sentiment)
 
-                # Calculate confidence values used by the Model Confidence
-                # section and keep them available for the download report/UI.
                 lr_conf, distil_conf, combined_conf, distil_available = get_engine_confidences(translated)
 
-                # ---------------------------------------------------------
-                # Detailed text report
-                # ---------------------------------------------------------
-                # Keep the downloaded report focused on the single review and
-                # present it in a clean, human-readable format. Aspect results
-                # use the same clause-level analysis shown in the UI above.
-                mentions = extract_aspect_mentions(translated)
-                if mentions:
-                    aspect_items = list(mentions.items())
-                    aspect_preds, aspect_confs = batch_predict(
-                        [sentence for _, sentence in aspect_items],
+                # Detailed downloadable text report
+                aspect_report_lines = []
+                report_mentions = extract_aspect_mentions(translated)
+                if report_mentions:
+                    report_items = list(report_mentions.items())
+                    report_preds, report_confs = batch_predict(
+                        [sentence for _, sentence in report_items],
                         engine=selected_model
                     )
-
-                    aspect_lines = []
                     for (aspect, _), pred, aspect_conf in zip(
-                        aspect_items, aspect_preds, aspect_confs
+                        report_items, report_preds, report_confs
                     ):
                         suggestion = get_aspect_suggestion(aspect, pred) or ""
-
-                        if pred == "POSITIVE":
-                            note_title = "Positive Note"
-                        elif pred == "NEUTRAL":
-                            note_title = "Improvement Note"
-                        else:
-                            note_title = "Improvement Suggestion"
-
-                        aspect_lines.append(
+                        note_title = (
+                            "Positive Note" if pred == "POSITIVE"
+                            else "Improvement Note" if pred == "NEUTRAL"
+                            else "Improvement Suggestion"
+                        )
+                        aspect_report_lines.append(
                             f"- {aspect}: {pred} ({float(aspect_conf):.2f})\n"
                             f"  {note_title}: {suggestion}"
                         )
                 else:
-                    aspect_lines = ["- No specific course aspects were detected."]
+                    aspect_report_lines.append("- No specific course aspects were detected.")
 
                 report_txt = (
                     "COURSE FEEDBACK SENTIMENT ANALYSIS\n"
@@ -1702,10 +1691,22 @@ if app_mode == "Single Review Analysis":
                     "ENGLISH TEXT USED FOR ANALYSIS\n"
                     f"{translated}\n\n"
                     "ASPECTS\n"
-                    + "\n".join(aspect_lines)
+                    + "\n".join(aspect_report_lines)
                     + "\n"
                 )
-                result_df = pd.DataFrame([{"Review": user_review, "Sentiment": sentiment, "Confidence": round(conf, 4)}])
+
+                # Detailed CSV export matching the single-review result information.
+                result_df = pd.DataFrame([{
+                    "Review": user_review,
+                    "Language": lang_name,
+                    "English Translation": translated,
+                    "Model": selected_model,
+                    "Sentiment": sentiment,
+                    "Confidence": round(float(conf), 4),
+                    "Negative Probability": round(float(probs["NEGATIVE"]), 4),
+                    "Neutral Probability": round(float(probs["NEUTRAL"]), 4),
+                    "Positive Probability": round(float(probs["POSITIVE"]), 4),
+                }])
 
                 mc_col, qa_col = st.columns(2)
                 with mc_col:
@@ -1734,17 +1735,19 @@ if app_mode == "Single Review Analysis":
                         def _action_btn(kind, label, icon, *args, **kw):
                             fn = st.download_button if kind == "dl" else st.button
                             try:
+                                if kind == "dl":
+                                    kw.setdefault("on_click", "ignore")
                                 return fn(label, *args, type="primary", use_container_width=True, icon=icon, **kw)
                             except TypeError:  # older Streamlit without icon= on this widget
                                 return fn(label, *args, type="primary", use_container_width=True, **kw)
 
                         _action_btn("dl", "Download Detailed Report", ":material/description:",
-                                    report_txt.encode("utf-8"), "detailed_report.txt", "text/plain", on_click="ignore")
+                                    report_txt.encode("utf-8"), "detailed_report.txt", "text/plain")
                         _action_btn("dl", "Download Results", ":material/download:",
-                                    df_to_csv_bytes(result_df), "single_review_result.csv", "text/csv", on_click="ignore")
+                                    df_to_csv_bytes(result_df), "single_review_result.csv", "text/csv")
                         if shap_fig is not None:
                             _action_btn("dl", "Download Explainable AI Graph", ":material/bar_chart:",
-                                        fig_to_png_bytes(shap_fig), "explainable_ai_graph.png", "image/png", on_click="ignore")
+                                        fig_to_png_bytes(shap_fig), "explainable_ai_graph.png", "image/png")
                         else:
                             _action_btn("btn", "Download Explainable AI Graph", ":material/bar_chart:", disabled=True)
 
