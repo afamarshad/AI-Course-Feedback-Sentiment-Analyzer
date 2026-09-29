@@ -180,25 +180,15 @@ section[data-testid="stSidebar"] * {
     margin: 0.85rem 0 0.45rem 0.25rem;
 }
 
-/* Navigation buttons */
-section[data-testid="stSidebar"] div.stButton > button {
-    width: 100%;
-    min-height: 43px;
-    text-align: left;
-    border-radius: 11px;
-    border: 1px solid #E2E8F0;
-    background: #F1F5F9 !important;
-    color: #334155 !important;
-    padding: 0.62rem 0.75rem;
-    margin-bottom: 0.35rem;
-    font-weight: 600;
-    font-size: 0.88rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    display: flex !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-    transition: all 0.18s ease;
-}
+/* Sidebar navigation buttons */
+    /* Default: transparent with dark-blue text */
+    section[data-testid="stSidebar"] div.stButton > button[kind="secondary"] {
+        background-color: rgba(255, 255, 255, 0.10) !important;
+        color: #0B1F3A !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
 
 /* Keep icons and labels aligned to the left */
 section[data-testid="stSidebar"] div.stButton > button div,
