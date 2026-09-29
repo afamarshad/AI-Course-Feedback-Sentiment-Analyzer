@@ -456,6 +456,53 @@ section.main .stDownloadButton > button:disabled {
     color: #FFFFFF !important;
     opacity: 0.65 !important;
 }
+
+/* =========================================================
+   CSV ANALYSIS PAGE BUTTONS ONLY
+   Keeps sidebar navigation buttons unchanged.
+   ========================================================= */
+
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button {
+    background: #2563EB !important;
+    color: #FFFFFF !important;
+    border: 1px solid #2563EB !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15) !important;
+}
+
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button p,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button p,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button p,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button [data-testid="stIconMaterial"],
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button [data-testid="stIconMaterial"],
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button [data-testid="stIconMaterial"],
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button svg,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button svg,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button svg {
+    color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+    stroke: #FFFFFF !important;
+}
+
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button:hover,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button:hover,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:hover {
+    background: #1D4ED8 !important;
+    border-color: #1D4ED8 !important;
+    color: #FFFFFF !important;
+}
+
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stButton > button:disabled,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) .stDownloadButton > button:disabled,
+[data-testid="stAppViewContainer"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:disabled {
+    background: #94A3B8 !important;
+    border-color: #94A3B8 !important;
+    color: #FFFFFF !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1754,6 +1801,9 @@ if app_mode == "Single Review Analysis":
 # VIEW: CSV ANALYSIS
 # =============================================================
 elif app_mode == "CSV Analysis":
+    # Marker used only to scope CSV-page button styling.
+    # Sidebar buttons are outside this marker and remain unchanged.
+    st.markdown('<span class="csv-analysis-page-marker"></span>', unsafe_allow_html=True)
     render_hero()
     st.markdown('<p class="main-header">Batch CSV Sentiment Analysis</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Upload a CSV file containing course reviews to analyze trends in bulk.</p>', unsafe_allow_html=True)
