@@ -1277,66 +1277,31 @@ with st.sidebar:
             st.session_state.nav = name
             st.rerun()
 
-    # ---------------------------------------------------------
-    # AI MODEL STATUS
-    # ---------------------------------------------------------
-    st.markdown(
-        '<div class="sidebar-status-card">'
-        '<div class="sidebar-status-title">AI MODEL STATUS</div>'
+    # # ---------------------------------------------------------
+    # # AI MODEL STATUS
+    # # ---------------------------------------------------------
+    # st.markdown(
+    #     '<div class="sidebar-status-card">'
+    #     '<div class="sidebar-status-title">AI MODEL STATUS</div>'
 
-        '<div class="sidebar-status-row">'
-        '<span class="status-dot"></span>'
-        '<span>TF-IDF + Logistic Regression</span>'
-        '</div>'
+    #     '<div class="sidebar-status-row">'
+    #     '<span class="status-dot"></span>'
+    #     '<span>TF-IDF + Logistic Regression</span>'
+    #     '</div>'
 
-        '<div class="sidebar-status-row">'
-        '<span class="status-dot"></span>'
-        '<span>Multilingual DistilBERT</span>'
-        '</div>'
+    #     '<div class="sidebar-status-row">'
+    #     '<span class="status-dot"></span>'
+    #     '<span>Multilingual DistilBERT</span>'
+    #     '</div>'
 
-        '<div class="sidebar-status-row">'
-        '<span class="status-dot"></span>'
-        '<span>Combined Prediction Engine</span>'
-        '</div>'
+    #     '<div class="sidebar-status-row">'
+    #     '<span class="status-dot"></span>'
+    #     '<span>Combined Prediction Engine</span>'
+    #     '</div>'
 
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    # ---------------------------------------------------------
-    # SENTIMENT LEGEND
-    # ---------------------------------------------------------
-    st.markdown(
-        '<div class="sidebar-legend">'
-        '<div class="sidebar-legend-title">SENTIMENT CLASSES</div>'
-
-        '<div class="sidebar-legend-row">'
-        '<div class="sidebar-legend-left">'
-        '<span class="legend-dot legend-positive"></span>'
-        '<span>Positive</span>'
-        '</div>'
-        '<span>😊</span>'
-        '</div>'
-
-        '<div class="sidebar-legend-row">'
-        '<div class="sidebar-legend-left">'
-        '<span class="legend-dot legend-neutral"></span>'
-        '<span>Neutral</span>'
-        '</div>'
-        '<span>😐</span>'
-        '</div>'
-
-        '<div class="sidebar-legend-row">'
-        '<div class="sidebar-legend-left">'
-        '<span class="legend-dot legend-negative"></span>'
-        '<span>Negative</span>'
-        '</div>'
-        '<span>😟</span>'
-        '</div>'
-
-        '</div>',
-        unsafe_allow_html=True
-    )
+    #     '</div>',
+    #     unsafe_allow_html=True
+    # ),
 
     # ---------------------------------------------------------
     # FOOTER
@@ -1934,6 +1899,12 @@ elif app_mode == "About":
                 st.markdown(f"**{title}**")
                 for b in bullets:
                     st.markdown(f"- {b}")
+
+    st.markdown('<p class="section-header">🎯 Sentiment and Aspect Analysis</p>', unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown("#### 🎯 Sentiment Detection")
+        st.write("Each review is classified into one of three sentiment categories:")
+        st.markdown("- 🟢 Positive\n- 🟡 Neutral\n- 🔴 Negative")
 
     st.markdown('<p class="section-header">🔗 Course Aspects</p>', unsafe_allow_html=True)
     st.write("The application can identify aspects such as:")
