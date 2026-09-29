@@ -1755,47 +1755,59 @@ if app_mode == "Single Review Analysis":
 # VIEW: CSV ANALYSIS
 # =============================================================
 elif app_mode == "CSV Analysis":
-    # CSV-page-only button styling. This CSS is injected only while the CSV
-    # Analysis view is active, and section.main excludes the sidebar.
+    # CSV-page-only button styling. Target Streamlit's current main-area DOM
+    # directly; the sidebar is intentionally not targeted.
     st.markdown("""
     <style>
-    section.main .stButton > button,
-    section.main .stDownloadButton > button,
-    section.main [data-testid="stFileUploader"] button,
-    section.main button[kind="secondary"],
-    section.main button[kind="primary"] {
-        background-color: #2563EB !important;
+    /* Standard Streamlit buttons + download buttons */
+    section[data-testid="stMain"] [data-testid="stBaseButton-secondary"],
+    section[data-testid="stMain"] [data-testid="stBaseButton-primary"],
+    section[data-testid="stMain"] .stButton button,
+    section[data-testid="stMain"] .stDownloadButton button,
+    section[data-testid="stMain"] [data-testid="stFileUploader"] button,
+    [data-testid="stMain"] [data-testid="stBaseButton-secondary"],
+    [data-testid="stMain"] [data-testid="stBaseButton-primary"],
+    [data-testid="stMain"] .stButton button,
+    [data-testid="stMain"] .stDownloadButton button,
+    [data-testid="stMain"] [data-testid="stFileUploader"] button {
         background: #2563EB !important;
+        background-color: #2563EB !important;
         color: #FFFFFF !important;
         border: 1px solid #2563EB !important;
         border-radius: 10px !important;
         font-weight: 600 !important;
         box-shadow: none !important;
     }
-    section.main .stButton > button p,
-    section.main .stDownloadButton > button p,
-    section.main [data-testid="stFileUploader"] button p,
-    section.main button[kind="secondary"] p,
-    section.main button[kind="primary"] p,
-    section.main .stButton > button svg,
-    section.main .stDownloadButton > button svg,
-    section.main [data-testid="stFileUploader"] button svg,
-    section.main button[kind="secondary"] svg,
-    section.main button[kind="primary"] svg,
-    section.main .stButton > button [data-testid="stIconMaterial"],
-    section.main .stDownloadButton > button [data-testid="stIconMaterial"],
-    section.main [data-testid="stFileUploader"] button [data-testid="stIconMaterial"] {
+
+    /* Text + icons */
+    section[data-testid="stMain"] [data-testid="stBaseButton-secondary"] *,
+    section[data-testid="stMain"] [data-testid="stBaseButton-primary"] *,
+    section[data-testid="stMain"] .stButton button *,
+    section[data-testid="stMain"] .stDownloadButton button *,
+    section[data-testid="stMain"] [data-testid="stFileUploader"] button *,
+    [data-testid="stMain"] [data-testid="stBaseButton-secondary"] *,
+    [data-testid="stMain"] [data-testid="stBaseButton-primary"] *,
+    [data-testid="stMain"] .stButton button *,
+    [data-testid="stMain"] .stDownloadButton button *,
+    [data-testid="stMain"] [data-testid="stFileUploader"] button * {
         color: #FFFFFF !important;
         fill: #FFFFFF !important;
         stroke: #FFFFFF !important;
     }
-    section.main .stButton > button:hover,
-    section.main .stDownloadButton > button:hover,
-    section.main [data-testid="stFileUploader"] button:hover,
-    section.main button[kind="secondary"]:hover,
-    section.main button[kind="primary"]:hover {
-        background-color: #1D4ED8 !important;
+
+    /* Hover */
+    section[data-testid="stMain"] [data-testid="stBaseButton-secondary"]:hover,
+    section[data-testid="stMain"] [data-testid="stBaseButton-primary"]:hover,
+    section[data-testid="stMain"] .stButton button:hover,
+    section[data-testid="stMain"] .stDownloadButton button:hover,
+    section[data-testid="stMain"] [data-testid="stFileUploader"] button:hover,
+    [data-testid="stMain"] [data-testid="stBaseButton-secondary"]:hover,
+    [data-testid="stMain"] [data-testid="stBaseButton-primary"]:hover,
+    [data-testid="stMain"] .stButton button:hover,
+    [data-testid="stMain"] .stDownloadButton button:hover,
+    [data-testid="stMain"] [data-testid="stFileUploader"] button:hover {
         background: #1D4ED8 !important;
+        background-color: #1D4ED8 !important;
         border-color: #1D4ED8 !important;
         color: #FFFFFF !important;
     }
