@@ -213,6 +213,21 @@ section[data-testid="stSidebar"] * {
     margin: 0.85rem 0 0.45rem 0.25rem;
 }
 
+/* Force every Streamlit button icon to a solid white Material icon */
+section[data-testid="stSidebar"] div.stButton > button [data-testid="stIconMaterial"],
+section[data-testid="stSidebar"] div.stButton > button svg,
+section.main .stButton > button [data-testid="stIconMaterial"],
+section.main .stButton > button svg,
+section.main .stDownloadButton > button [data-testid="stIconMaterial"],
+section.main .stDownloadButton > button svg,
+section.main [data-testid="stFileUploader"] button [data-testid="stIconMaterial"],
+section.main [data-testid="stFileUploader"] button svg {
+    color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+    stroke: #FFFFFF !important;
+    opacity: 1 !important;
+}
+
 /* Navigation buttons */
 section[data-testid="stSidebar"] div.stButton > button {
     width: 100%;
@@ -1839,7 +1854,7 @@ elif app_mode == "CSV Analysis":
                 horizontal=True, label_visibility="collapsed", key="csv_model", index=2
             )
 
-            if st.button("🔍 Analyze CSV", type="primary", use_container_width=True):
+            if st.button("Analyze CSV", type="primary", use_container_width=True, icon=":material/analytics:"):
                 with st.spinner("Analyzing reviews..."):
                     work_df = df.copy()
                     texts = work_df[review_col].astype(str).tolist()
@@ -2088,7 +2103,7 @@ elif app_mode == "CSV Analysis":
             st.caption(f"Showing translations for the first {TRANSLATE_LIMIT} of {len(work_df)} rows to keep things fast. Full sentiment results for all rows are in the download below.")
 
         full_export_cols = ([course_col] if course_col else []) + [review_col, "Sentiment", "Confidence"]
-        st.download_button("⬇️ Download Results", df_to_csv_bytes(work_df[full_export_cols]),
+        st.download_button("Download Results", df_to_csv_bytes(work_df[full_export_cols]),
                             "analysis_results.csv", "text/csv", use_container_width=True, on_click="ignore")
 
     render_footer()
@@ -2114,7 +2129,7 @@ elif app_mode == "Aspect Analysis":
         horizontal=True, label_visibility="collapsed", key="aspect_model_choice", index=2,
         help="Uses the same 3 models as Single Review Analysis. Kept as Combined by default so results here match Single Review's default for the same text."
     )
-    if st.button("🔎 Analyze Aspects", type="primary"):
+    if st.button("Analyze Aspects", type="primary", icon=":material/insights:"):
         if not text.strip():
             st.warning("Please enter some review text first.")
         else:
@@ -2142,7 +2157,7 @@ elif app_mode == "Explainable AI (SHAP)":
     with text_col3:
         text = st.text_area("Enter course feedback", key="shap_text",
                              placeholder="Enter a review to generate word-level explanations.")
-    if st.button("🎨 Generate Explanation", type="primary"):
+    if st.button("Generate Explanation", type="primary", icon=":material/auto_awesome:"):
         if not text.strip():
             st.warning("Please enter some review text first.")
         elif not MODEL_READY:
