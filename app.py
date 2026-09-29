@@ -1935,12 +1935,6 @@ elif app_mode == "About":
                 for b in bullets:
                     st.markdown(f"- {b}")
 
-    st.markdown('<p class="section-header">🎯 Sentiment and Aspect Analysis</p>', unsafe_allow_html=True)
-    with st.container(border=True):
-        st.markdown("#### 🎯 Sentiment Detection")
-        st.write("Each review is classified into one of three sentiment categories:")
-        st.markdown("- 🟢 Positive\n- 🟡 Neutral\n- 🔴 Negative")
-
     st.markdown('<p class="section-header">🔗 Course Aspects</p>', unsafe_allow_html=True)
     st.write("The application can identify aspects such as:")
     st.markdown("".join(f'<span class="pill">{a}</span>' for a in ASPECT_NAMES), unsafe_allow_html=True)
