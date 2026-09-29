@@ -657,7 +657,7 @@ def batch_predict(texts, engine="Combined"):
     return labels, conf
 
 
-def predict_sentiment(text, model_type="DistilBERT"):
+def predict_sentiment(text, model_type="Combined"):
     preds, confs = batch_predict([text], engine=model_type)
     return preds[0], float(confs[0])
 
@@ -1627,7 +1627,7 @@ MODEL_DESCRIPTIONS = {
     "Logistic Regression": ("Logistic Regression",
         "Fast, lightweight linear model trained on TF-IDF features. Ideal for quick testing."),
     "DistilBERT": ("DistilBERT",
-        "Fine-tuned multilingual transformer (Afsah-2027/coursera-multilingual-distilbert), loaded from Hugging Face Hub. First use in a session downloads ~541 MB, so it may take a moment; if it can't load, results fall back to Logistic Regression."),
+        "Fine-tuned multilingual transformer (afamarshad/coursera-multilingual-distilbert), loaded from Hugging Face Hub. First use in a session downloads ~541 MB, so it may take a moment; if it can't load, results fall back to Logistic Regression."),
     "Combined": ("Combined (Recommended)",
         "Uses both Logistic Regression and multilingual DistilBERT. Averages the probability outputs of the two trained classifiers and is recommended for the final presentation."),
 }
