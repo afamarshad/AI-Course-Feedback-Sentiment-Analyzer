@@ -462,7 +462,10 @@ section.main .stDownloadButton > button:disabled {
 /* CSV Analysis page controls only. Sidebar controls are intentionally excluded. */
 section.main:has(.csv-analysis-page-marker) .stButton > button,
 section.main:has(.csv-analysis-page-marker) .stDownloadButton > button,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button {
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button,
+section.main:has(.csv-analysis-page-marker) [data-testid="stBaseButton-secondary"],
+section.main:has(.csv-analysis-page-marker) [data-testid="stBaseButton-primary"] {
+    background-color: #2563EB !important;
     background: #2563EB !important;
     color: #FFFFFF !important;
     border: 1px solid #2563EB !important;
@@ -472,9 +475,13 @@ section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] butto
 section.main:has(.csv-analysis-page-marker) .stButton > button p,
 section.main:has(.csv-analysis-page-marker) .stDownloadButton > button p,
 section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button p,
+section.main:has(.csv-analysis-page-marker) [data-testid="stBaseButton-secondary"] p,
+section.main:has(.csv-analysis-page-marker) [data-testid="stBaseButton-primary"] p,
 section.main:has(.csv-analysis-page-marker) .stButton > button svg,
 section.main:has(.csv-analysis-page-marker) .stDownloadButton > button svg,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button svg {
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button svg,
+section.main:has(.csv-analysis-page-marker) [data-testid="stBaseButton-secondary"] svg,
+section.main:has(.csv-analysis-page-marker) [data-testid="stBaseButton-primary"] svg {
     color: #FFFFFF !important;
     fill: #FFFFFF !important;
     stroke: #FFFFFF !important;
