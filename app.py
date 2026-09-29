@@ -1357,9 +1357,9 @@ if app_mode == "Single Review Analysis":
                      key="sample_choice", on_change=_apply_sample_feedback)
     with text_col:
         user_review = st.text_area("Type your own review", max_chars=1000,
-                                    key="single_review_text", placeholder="Type or paste feedback here...",
-                                    value=st.session_state.get("single_review_text",
-                                          "The instructor was good and the content was useful, but some assignments were difficult."))
+                                    key="single_review_text", placeholder="Type or paste feedback here...")
+                                    # ,value=st.session_state.get("single_review_text",
+                                    #       "The instructor was good and the content was useful, but some assignments were difficult."))
         st.caption(f"{len(user_review)}/1000")
 
     st.markdown("")
