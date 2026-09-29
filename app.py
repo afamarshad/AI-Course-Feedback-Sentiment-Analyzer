@@ -1667,11 +1667,24 @@ if app_mode == "Single Review Analysis":
                         [sentence for _, sentence in aspect_items],
                         engine=selected_model
                     )
-                    aspect_lines = [
-                        f"- {aspect}: {pred} ({float(aspect_conf):.2f})"
-                        for (aspect, _), pred, aspect_conf
-                        in zip(aspect_items, aspect_preds, aspect_confs)
-                    ]
+
+                    aspect_lines = []
+                    for (aspect, _), pred, aspect_conf in zip(
+                        aspect_items, aspect_preds, aspect_confs
+                    ):
+                        suggestion = get_aspect_suggestion(aspect, pred) or ""
+
+                        if pred == "POSITIVE":
+                            note_title = "Positive Note"
+                        elif pred == "NEUTRAL":
+                            note_title = "Improvement Note"
+                        else:
+                            note_title = "Improvement Suggestion"
+
+                        aspect_lines.append(
+                            f"- {aspect}: {pred} ({float(aspect_conf):.2f})\n"
+                            f"  {note_title}: {suggestion}"
+                        )
                 else:
                     aspect_lines = ["- No specific course aspects were detected."]
 
