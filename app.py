@@ -186,14 +186,14 @@ section[data-testid="stSidebar"] div.stButton > button {
     min-height: 43px;
     text-align: left;
     border-radius: 11px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: #C7D2E3 !important;
+    border: 1px solid #E5E7EB;
+    background: #F8FAFC !important;
+    color: #1E293B !important;
     padding: 0.62rem 0.75rem;
     margin-bottom: 0.35rem;
     font-weight: 600;
     font-size: 0.88rem;
-    box-shadow: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     display: flex !important;
     justify-content: flex-start !important;
     align-items: center !important;
