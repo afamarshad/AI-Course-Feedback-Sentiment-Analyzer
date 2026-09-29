@@ -2283,9 +2283,18 @@ elif app_mode == "About":
 
     st.markdown('<p class="section-header">🎯 Sentiment and Aspect Analysis</p>', unsafe_allow_html=True)
     with st.container(border=True):
-        st.markdown("#### 🎯 Sentiment Detection")
+        st.markdown("####  Sentiment Detection")
         st.write("Each review is classified into one of three sentiment categories:")
-        st.markdown("- 🟢 Positive\n- 🟡 Neutral\n- 🔴 Negative")
+        st.markdown(
+            """
+            <div style="display:flex; gap:10px; flex-wrap:wrap; padding-bottom:14px;">
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:7px 14px;">😊 Positive</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:7px 14px;">😐 Neutral</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:7px 14px;">☹️ Negative</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     st.markdown('<p class="section-header">🔗 Course Aspects</p>', unsafe_allow_html=True)
     st.write("The application can identify aspects such as:")
@@ -2306,7 +2315,7 @@ elif app_mode == "About":
     st.markdown('<p class="section-header">📈 Why This Application Is Useful</p>', unsafe_allow_html=True)
     st.markdown(
         '<div class="highlight-box">'
-        '<b>🎓 Turning student feedback into actionable insights.</b><br><br>'
+        '<b>Turning student feedback into actionable insights.</b><br><br>'
         'Instead of manually reviewing large volumes of course feedback, educators and course teams can '
         'quickly identify overall sentiment, discover specific areas that students appreciate or struggle with, '
         'and understand the factors influencing model predictions.'
@@ -2314,8 +2323,8 @@ elif app_mode == "About":
     )
 
     st.markdown("")
-    checklist = ["💬 Single Review Analysis", "📄 CSV File Analysis", "🔗 Aspect Analysis",
-                 "💡 Explainable AI", "📊 Model Confidence", "⬇️ Downloadable Results", "🖥️ CPU Compatible"]
+    checklist = ["Single Review Analysis", "CSV File Analysis", "Aspect Analysis",
+                 "Explainable AI", "Model Confidence", "Downloadable Results", "CPU Compatible"]
     with st.container(border=True):
         for item in checklist:
             st.markdown(f'<div class="check-row">✅ {item}</div>', unsafe_allow_html=True)
