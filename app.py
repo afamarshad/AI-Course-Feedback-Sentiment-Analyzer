@@ -657,7 +657,7 @@ def batch_predict(texts, engine="Combined"):
     return labels, conf
 
 
-def predict_sentiment(text, model_type="Combined"):
+def predict_sentiment(text, model_type="DistilBERT"):
     preds, confs = batch_predict([text], engine=model_type)
     return preds[0], float(confs[0])
 
