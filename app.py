@@ -188,6 +188,7 @@ section[data-testid="stSidebar"] * {
         border: 1px solid rgba(255, 255, 255, 0.14) !important;
         font-weight: 600 !important;
         transition: all 0.2s ease-in-out !important;
+        text-align:left;
     }
 
 /* Keep icons and labels aligned to the left */
