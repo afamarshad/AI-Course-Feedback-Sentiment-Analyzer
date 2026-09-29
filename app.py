@@ -1174,23 +1174,185 @@ if "nav" not in st.session_state:
     st.session_state.nav = "Single Review Analysis"
 
 with st.sidebar:
-    GRAD_CAP_SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="80 90 530 425">'
-                     '<path d="M207,290V395C207,455 270,480 350,480C430,480 495,452 495,395V290" fill="none" stroke="#3B82F6" stroke-width="50"/>'
-                     '<path d="M340,100L592,232L340,358L95,232Z" fill="#3B82F6"/>'
-                     '<rect x="528" y="258" width="40" height="140" fill="#60A5FA"/>'
-                     '<circle cx="548" cy="418" r="27" fill="#93C5FD"/></svg>')
-    st.markdown(f'<div class="sidebar-logo">{GRAD_CAP_SVG}</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-title">Course Feedback<br>Sentiment Analysis</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-sub">AI-Powered Insights for Better Learning</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-author">Created By Afsah Arshad</div>', unsafe_allow_html=True)
+
+    # ---------------------------------------------------------
+    # BRAND
+    # ---------------------------------------------------------
+    GRAD_CAP_SVG = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="80 90 530 425">'
+        '<path d="M207,290V395C207,455 270,480 350,480C430,480 495,452 495,395V290" '
+        'fill="none" stroke="#3B82F6" stroke-width="50"/>'
+        '<path d="M340,100L592,232L340,358L95,232Z" fill="#3B82F6"/>'
+        '<rect x="528" y="258" width="40" height="140" fill="#60A5FA"/>'
+        '<circle cx="548" cy="418" r="27" fill="#93C5FD"/>'
+        '</svg>'
+    )
+
+    st.markdown(
+        '<div class="sidebar-brand">'
+        f'<div class="sidebar-logo-wrap">{GRAD_CAP_SVG}</div>'
+        '<div class="sidebar-title">Course Feedback<br>Sentiment Analysis</div>'
+        '<div class="sidebar-sub">AI-Powered Educational Analytics</div>'
+        '<div class="sidebar-author">Created By Afsah Arshad</div>'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
     st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
 
-    for name, icon in NAV_ITEMS:
+    # ---------------------------------------------------------
+    # ANALYSIS NAVIGATION
+    # ---------------------------------------------------------
+    st.markdown(
+        '<div class="sidebar-section-label">ANALYSIS</div>',
+        unsafe_allow_html=True
+    )
+
+    analysis_items = [
+        ("Single Review Analysis", ":material/chat:"),
+        ("CSV Analysis", ":material/description:"),
+        ("Aspect Analysis", ":material/link:"),
+    ]
+
+    for name, icon in analysis_items:
         is_active = st.session_state.nav == name
-        if st.button(name, key=f"nav_{name}", use_container_width=True, icon=icon,
-                     type="primary" if is_active else "secondary"):
+
+        if st.button(
+            name,
+            key=f"nav_{name}",
+            use_container_width=True,
+            icon=icon,
+            type="primary" if is_active else "secondary"
+        ):
             st.session_state.nav = name
             st.rerun()
+
+    # ---------------------------------------------------------
+    # TOOLS NAVIGATION
+    # ---------------------------------------------------------
+    st.markdown(
+        '<div class="sidebar-section-label">TOOLS</div>',
+        unsafe_allow_html=True
+    )
+
+    tool_items = [
+        ("Explainable AI (SHAP)", ":material/lightbulb:"),
+    ]
+
+    for name, icon in tool_items:
+        is_active = st.session_state.nav == name
+
+        if st.button(
+            name,
+            key=f"nav_{name}",
+            use_container_width=True,
+            icon=icon,
+            type="primary" if is_active else "secondary"
+        ):
+            st.session_state.nav = name
+            st.rerun()
+
+    # ---------------------------------------------------------
+    # INFORMATION
+    # ---------------------------------------------------------
+    st.markdown(
+        '<div class="sidebar-section-label">INFORMATION</div>',
+        unsafe_allow_html=True
+    )
+
+    info_items = [
+        ("About", ":material/info:"),
+    ]
+
+    for name, icon in info_items:
+        is_active = st.session_state.nav == name
+
+        if st.button(
+            name,
+            key=f"nav_{name}",
+            use_container_width=True,
+            icon=icon,
+            type="primary" if is_active else "secondary"
+        ):
+            st.session_state.nav = name
+            st.rerun()
+
+    # ---------------------------------------------------------
+    # AI MODEL STATUS
+    # ---------------------------------------------------------
+    st.markdown(
+        '<div class="sidebar-status-card">'
+        '<div class="sidebar-status-title">AI MODEL STATUS</div>'
+
+        '<div class="sidebar-status-row">'
+        '<span class="status-dot"></span>'
+        '<span>TF-IDF + Logistic Regression</span>'
+        '</div>'
+
+        '<div class="sidebar-status-row">'
+        '<span class="status-dot"></span>'
+        '<span>Multilingual DistilBERT</span>'
+        '</div>'
+
+        '<div class="sidebar-status-row">'
+        '<span class="status-dot"></span>'
+        '<span>Combined Prediction Engine</span>'
+        '</div>'
+
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    # ---------------------------------------------------------
+    # SENTIMENT LEGEND
+    # ---------------------------------------------------------
+    st.markdown(
+        '<div class="sidebar-legend">'
+        '<div class="sidebar-legend-title">SENTIMENT CLASSES</div>'
+
+        '<div class="sidebar-legend-row">'
+        '<div class="sidebar-legend-left">'
+        '<span class="legend-dot legend-positive"></span>'
+        '<span>Positive</span>'
+        '</div>'
+        '<span>😊</span>'
+        '</div>'
+
+        '<div class="sidebar-legend-row">'
+        '<div class="sidebar-legend-left">'
+        '<span class="legend-dot legend-neutral"></span>'
+        '<span>Neutral</span>'
+        '</div>'
+        '<span>😐</span>'
+        '</div>'
+
+        '<div class="sidebar-legend-row">'
+        '<div class="sidebar-legend-left">'
+        '<span class="legend-dot legend-negative"></span>'
+        '<span>Negative</span>'
+        '</div>'
+        '<span>😟</span>'
+        '</div>'
+
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    # ---------------------------------------------------------
+    # FOOTER
+    # ---------------------------------------------------------
+    st.markdown(
+        '<div class="sidebar-footer">'
+        '<div class="sidebar-footer-title">'
+        'Course Feedback Sentiment Analysis'
+        '</div>'
+        '<div class="sidebar-footer-sub">'
+        'AI • NLP • Educational Analytics'
+        '</div>'
+        '<span class="sidebar-version">v1.0</span>'
+        '</div>',
+        unsafe_allow_html=True
+    )
 
 # Left-align original (possibly RTL-script) feedback text wherever it's shown,
 # so Urdu/Arabic text doesn't auto-flip to right-aligned next to its translation.
