@@ -1739,12 +1739,12 @@ if app_mode == "Single Review Analysis":
                                 return fn(label, *args, type="primary", use_container_width=True, **kw)
 
                         _action_btn("dl", "Download Detailed Report", ":material/description:",
-                                    report_txt.encode("utf-8"), "detailed_report.txt", "text/plain")
+                                    report_txt.encode("utf-8"), "detailed_report.txt", "text/plain", on_click="ignore")
                         _action_btn("dl", "Download Results", ":material/download:",
-                                    df_to_csv_bytes(result_df), "single_review_result.csv", "text/csv")
+                                    df_to_csv_bytes(result_df), "single_review_result.csv", "text/csv", on_click="ignore")
                         if shap_fig is not None:
                             _action_btn("dl", "Download Explainable AI Graph", ":material/bar_chart:",
-                                        fig_to_png_bytes(shap_fig), "explainable_ai_graph.png", "image/png")
+                                        fig_to_png_bytes(shap_fig), "explainable_ai_graph.png", "image/png", on_click="ignore")
                         else:
                             _action_btn("btn", "Download Explainable AI Graph", ":material/bar_chart:", disabled=True)
 
@@ -1916,10 +1916,10 @@ elif app_mode == "CSV Analysis":
             dl1, dl2 = st.columns(2)
             with dl1:
                 st.download_button("⬇️ Download Overall Aspect Analysis", df_to_csv_bytes(overall_summary),
-                                    "overall_aspect_analysis.csv", "text/csv", use_container_width=True)
+                                    "overall_aspect_analysis.csv", "text/csv", use_container_width=True, on_click="ignore")
             with dl2:
                 st.download_button("🖼️ Download Aspect Graph", fig_to_png_bytes(fig2),
-                                    "aspect_graph.png", "image/png", use_container_width=True)
+                                    "aspect_graph.png", "image/png", use_container_width=True, on_click="ignore")
 
             st.markdown(f'<p class="section-header">{hicon("cap")} Course-Wise Aspect Analysis</p>', unsafe_allow_html=True)
             st.caption("Aspect sentiment is grouped using the Course Name or Course ID available in the uploaded CSV.")
@@ -1940,7 +1940,7 @@ elif app_mode == "CSV Analysis":
                 course_summary = course_summary[["Course", "Aspect", "Reviews", "Positive", "Neutral", "Negative", "Overall Sentiment"]]
 
                 st.download_button("⬇️ Download All Course-Wise Aspect Analysis", df_to_csv_bytes(course_summary),
-                                    "course_wise_aspect_analysis.csv", "text/csv", use_container_width=True)
+                                    "course_wise_aspect_analysis.csv", "text/csv", use_container_width=True, on_click="ignore")
 
                 course_options = sorted(course_summary["Course"].unique().tolist())
                 selected_course = st.selectbox("Select Course", course_options)
@@ -1961,16 +1961,16 @@ elif app_mode == "CSV Analysis":
                 dl3, dl4 = st.columns(2)
                 with dl3:
                     st.download_button("⬇️ Download Selected Course Analysis", df_to_csv_bytes(course_view),
-                                        f"{selected_course}_aspect_analysis.csv", "text/csv", use_container_width=True)
+                                        f"{selected_course}_aspect_analysis.csv", "text/csv", use_container_width=True, on_click="ignore")
                 with dl4:
                     st.download_button("🖼️ Download Course Graph", fig_to_png_bytes(fig3),
-                                        f"{selected_course}_aspect_graph.png", "image/png", use_container_width=True)
+                                        f"{selected_course}_aspect_graph.png", "image/png", use_container_width=True, on_click="ignore")
 
             st.markdown(f'<p class="section-header">{hicon("clipboard")} Detailed Aspect Results</p>', unsafe_allow_html=True)
             detailed = aspect_df[["Course", "Aspect", "Sentiment", "Confidence", "Review"]] if course_col else aspect_df[["Aspect", "Sentiment", "Confidence", "Review"]]
             st.dataframe(detailed, use_container_width=True, hide_index=True)
             st.download_button("⬇️ Download Detailed Aspect Results", df_to_csv_bytes(detailed),
-                                "detailed_aspect_results.csv", "text/csv", use_container_width=True)
+                                "detailed_aspect_results.csv", "text/csv", use_container_width=True, on_click="ignore")
 
         st.markdown(f'<p class="section-header">{hicon("clipboard")} Analysis Results</p>', unsafe_allow_html=True)
         TRANSLATE_LIMIT = 200
@@ -1992,7 +1992,7 @@ elif app_mode == "CSV Analysis":
 
         full_export_cols = ([course_col] if course_col else []) + [review_col, "Sentiment", "Confidence"]
         st.download_button("⬇️ Download Results", df_to_csv_bytes(work_df[full_export_cols]),
-                            "analysis_results.csv", "text/csv", use_container_width=True)
+                            "analysis_results.csv", "text/csv", use_container_width=True, on_click="ignore")
 
     render_footer()
 
