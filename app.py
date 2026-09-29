@@ -1650,11 +1650,43 @@ if app_mode == "Single Review Analysis":
                 with st.container(border=True):
                     shap_fig = render_explainable_section(translated, sentiment)
 
-                lr_conf, distil_conf, combined_conf, distil_available = get_engine_confidences(translated)
+                # ---------------------------------------------------------
+                # Detailed text report
+                # ---------------------------------------------------------
+                # Keep the downloaded report focused on the single review and
+                # present it in a clean, human-readable format. Aspect results
+                # use the same clause-level analysis shown in the UI above.
+                mentions = extract_aspect_mentions(translated)
+                if mentions:
+                    aspect_items = list(mentions.items())
+                    aspect_preds, aspect_confs = batch_predict(
+                        [sentence for _, sentence in aspect_items],
+                        engine=selected_model
+                    )
+                    aspect_lines = [
+                        f"- {aspect}: {pred} ({float(aspect_conf):.2f})"
+                        for (aspect, _), pred, aspect_conf
+                        in zip(aspect_items, aspect_preds, aspect_confs)
+                    ]
+                else:
+                    aspect_lines = ["- No specific course aspects were detected."]
+
                 report_txt = (
-                    f"Review: {user_review}\n\nLanguage: {lang_name}\nTranslation: {translated}\n\n"
-                    f"Sentiment: {sentiment} (confidence {conf:.2f})\n\n"
-                    f"Model Confidence -> Logistic Regression: {lr_conf:.2f}, DistilBERT: {distil_conf:.2f}, Combined: {combined_conf:.2f}\n"
+                    "COURSE FEEDBACK SENTIMENT ANALYSIS\n"
+                    "Created By Afsah Arshad\n"
+                    "==================================================\n"
+                    f"Model: {selected_model}\n"
+                    f"Sentiment: {sentiment}\n"
+                    f"Confidence: {conf:.4f}\n\n"
+                    "REVIEW\n"
+                    f"{user_review}\n\n"
+                    "LANGUAGE\n"
+                    f"{lang_name}\n\n"
+                    "ENGLISH TEXT USED FOR ANALYSIS\n"
+                    f"{translated}\n\n"
+                    "ASPECTS\n"
+                    + "\n".join(aspect_lines)
+                    + "\n"
                 )
                 result_df = pd.DataFrame([{"Review": user_review, "Sentiment": sentiment, "Confidence": round(conf, 4)}])
 
