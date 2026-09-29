@@ -1650,6 +1650,10 @@ if app_mode == "Single Review Analysis":
                 with st.container(border=True):
                     shap_fig = render_explainable_section(translated, sentiment)
 
+                # Calculate confidence values used by the Model Confidence
+                # section and keep them available for the download report/UI.
+                lr_conf, distil_conf, combined_conf, distil_available = get_engine_confidences(translated)
+
                 # ---------------------------------------------------------
                 # Detailed text report
                 # ---------------------------------------------------------
