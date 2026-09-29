@@ -2104,7 +2104,7 @@ elif app_mode == "CSV Analysis":
                 })
 
             st.download_button(
-                "⬇️ Download Course-Wise & Detailed Analysis Package", course_package,
+                "⬇️ Download Course-Wise Analysis Package", course_package,
                 "course_wise_analysis_package.zip", "application/zip",
                 use_container_width=True, on_click="ignore"
             )
