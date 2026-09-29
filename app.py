@@ -27,7 +27,7 @@ try:
 except Exception:
     TRANSFORMERS_AVAILABLE = False
 
-DISTILBERT_REPO = "Afsah-2027/coursera-multilingual-distilbert"
+DISTILBERT_REPO = "afamarshad/coursera-multilingual-distilbert"
 
 # =============================================================
 # PAGE CONFIG
@@ -49,24 +49,29 @@ SENT_DOT = {"POSITIVE": "🟢", "NEUTRAL": "🟡", "NEGATIVE": "🔴"}
 # =============================================================
 st.markdown("""
 <style>
-.main-header { font-size: 1.9rem !important; color: #0F172A !important; font-weight: 800 !important; margin-bottom: 0.2rem !important; line-height: 1.25 !important; }
-.sub-header { font-size: 0.95rem !important; color: #4B5563 !important; margin-bottom: 1.2rem !important; }
-.section-header { font-size: 1.55rem !important; font-weight: 800 !important; color: #0F172A !important; margin: 1.2rem 0 0.3rem 0 !important; line-height: 1.25 !important; }
+.main-header { font-size: 2.6rem !important; color: #0F172A !important; font-weight: 900 !important; margin-bottom: 0.3rem !important; line-height: 1.15 !important; letter-spacing: -0.01em; }
+.sub-header { font-size: 1rem !important; color: #4B5563 !important; margin-bottom: 1.2rem !important; }
+.section-header { font-size: 2.05rem !important; font-weight: 800 !important; color: #0F172A !important; margin: 1.4rem 0 0.4rem 0 !important; line-height: 1.2 !important; }
+.result-header { font-size: 1.4rem !important; font-weight: 700 !important; color: #0F172A !important; margin: 1.2rem 0 0.4rem 0 !important; line-height: 1.25 !important; }
+.header-icon { display:inline-flex; vertical-align:-8px; margin-right:0.4rem; }
+.main-header .header-icon { width:65px; height:52px; vertical-align:-10px; margin-right:0.5rem; }
+.section-header .header-icon { width:36px; height:31px; vertical-align:-6px; margin-right:0.6rem; }
 .app-footer { text-align:center; color:#6B7280; font-size:0.85rem; margin-top:2.5rem; padding-top:1rem; border-top:1px solid #E5E7EB; }
 
+.st-key-hero-card { background:#EAF2FF; border:1px solid #DCE8FB; border-radius:16px; padding:1.2rem 1.5rem; }
 .info-badge-card {
-    background:#EFF6FF; border:1px solid #BFDBFE; border-radius:12px;
+    background:transparent; border:2px solid #1E3A5F; border-radius:12px;
     padding:0.8rem 1rem; height:100%;
 }
-.info-badge-card .badge-title { font-weight:800; color:#1D4ED8; font-size:1rem; margin-bottom:0.3rem; }
-.info-badge-card .badge-body { color:#1D4ED8; font-size:0.88rem; line-height:1.5; }
+.info-badge-card .badge-title { font-weight:800; color:#1E3A5F; font-size:1rem; margin-bottom:0.3rem; }
+.info-badge-card .badge-body { color:#1E3A5F; font-size:1rem; line-height:1.6; }
 
 .model-desc-box {
     background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
     padding:0.8rem 1rem; height:100%;
 }
 .model-desc-box .model-desc-title { font-weight:800; color:#1D4ED8; margin-bottom:0.25rem; }
-.model-desc-box .model-desc-body { color:#1D4ED8; font-size:0.88rem; line-height:1.45; }
+.model-desc-box .model-desc-body { color:#1D4ED8; font-size:1rem; line-height:1.55; }
 
 .insight-box {
     background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
@@ -79,6 +84,38 @@ st.markdown("""
 }
 .highlight-box b { color:#1D4ED8; }
 
+/* Aspect insight / suggestion box */
+.aspect-insight {
+    margin-top: 0.75rem;
+    padding: 0.7rem 0.8rem;
+    border-radius: 9px;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.aspect-insight-positive {
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    color: #166534;
+}
+
+.aspect-insight-neutral {
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    color: #92400E;
+}
+
+.aspect-insight-negative {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #991B1B;
+}
+
+.aspect-insight-title {
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+
 .pill {
     display:inline-block; border:1px solid #D1D5DB; border-radius:8px;
     padding:0.35rem 0.8rem; margin:0.2rem; font-size:0.92rem; color:#111827;
@@ -89,68 +126,271 @@ st.markdown("""
 .orig-text-left { text-align: left !important; white-space: pre-wrap; direction: ltr; unicode-bidi: plaintext; }
 
 section[data-testid="stSidebar"] {
-    background-color: #0B1B38;
+    background: linear-gradient(
+        180deg,
+        #07152F 0%,
+        #0B1B38 52%,
+        #09172F 100%
+    );
+    border-right: 1px solid #1E3154;
 }
-section[data-testid="stSidebar"] > div { padding-top: 1rem; }
-section[data-testid="stSidebar"] * { color: #E5E7EB; }
 
-.sidebar-logo {
-    width: 44px; height: 44px;
-    display:flex; align-items:center; justify-content:center;
-    margin-bottom: 0.6rem;
+section[data-testid="stSidebar"] > div {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
 }
-.sidebar-logo svg { width: 40px; height: 40px; }
-.sidebar-title { font-size: 1.45rem; font-weight: 800; color: #FFFFFF; line-height:1.25; margin-bottom: 0.4rem;}
-.sidebar-sub { font-size: 0.92rem; color: #9CA3AF; margin-bottom: 0.35rem; }
-.sidebar-author { font-size: 0.88rem; color: #93A3B8; margin-bottom: 0.8rem; }
-.sidebar-divider { border-top: 1px solid #1F2E4D; margin: 0.7rem 0 0.9rem 0; }
 
+section[data-testid="stSidebar"] * {
+    color: #E5E7EB;
+}
+
+/* Brand */
+.sidebar-brand {
+    padding: 0.35rem 0.2rem 0.7rem 0.2rem;
+}
+
+.sidebar-logo-wrap {
+    width: 58px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+        135deg,
+        rgba(59,130,246,0.20),
+        rgba(96,165,250,0.08)
+    );
+    border: 1px solid rgba(96,165,250,0.25);
+    border-radius: 15px;
+    margin-bottom: 0.85rem;
+}
+
+.sidebar-logo-wrap svg {
+    width: 45px;
+    height: 40px;
+}
+
+.sidebar-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #FFFFFF !important;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.45rem;
+}
+
+.sidebar-sub {
+    font-size: 0.82rem;
+    color: #9FB1CA !important;
+    line-height: 1.45;
+    margin-bottom: 0.35rem;
+}
+
+.sidebar-author {
+    font-size: 0.78rem;
+    color: #7185A4 !important;
+    margin-bottom: 0;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #263B5E,
+        transparent
+    );
+    margin: 0.9rem 0 1rem 0;
+}
+
+/* Navigation section labels */
+.sidebar-section-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #7185A4 !important;
+    letter-spacing: 0.12em;
+    margin: 0.85rem 0 0.45rem 0.25rem;
+}
+
+/* Navigation buttons */
 section[data-testid="stSidebar"] div.stButton > button {
     width: 100%;
+    min-height: 43px;
     text-align: left;
-    border-radius: 10px;
-    border: none;
-    background-color: #14213F;
-    color: #E5E7EB !important;
-    padding: 0.65rem 0.9rem;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    font-size: 0.95rem;
-    box-shadow: none;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    background-color: rgba(255, 255, 255, 0.10) !important;
+    color: #0B1F3A !important;
+    padding: 0.62rem 0.75rem;
+    margin-bottom: 0.35rem;
+    font-weight: 600 !important;
+    font-size: 0.88rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     display: flex !important;
     justify-content: flex-start !important;
     align-items: center !important;
+    transition: all 0.2s ease-in-out !important;
 }
-/* Streamlit wraps the icon + label of an icon-button in nested flex
-   containers that are centered by default. Forcing justify-content and
-   text-align on every nested div/span (not just the immediate child) makes
-   sure the icon and label both hug the left edge, at every nesting level
-   Streamlit happens to render — matching the "Aligned to Left" sketch. */
+
+/* Keep icons and labels aligned to the left */
 section[data-testid="stSidebar"] div.stButton > button div,
 section[data-testid="stSidebar"] div.stButton > button span {
     justify-content: flex-start !important;
     text-align: left !important;
 }
+
 section[data-testid="stSidebar"] div.stButton > button p {
     text-align: left !important;
     margin: 0 !important;
 }
-/* Small gap so the icon doesn't sit flush against the label once both are
-   pinned to the left instead of being centered as a pair. */
+
+/* Icon spacing */
 section[data-testid="stSidebar"] div.stButton > button [data-testid="stIconMaterial"] {
-    margin-right: 0.5rem;
+    margin-right: 0.55rem;
 }
+
+/* Hover */
 section[data-testid="stSidebar"] div.stButton > button:hover {
-    background-color: #1D2E52;
+    background: #14284A !important;
+    border: 1px solid #223D65 !important;
     color: #FFFFFF !important;
-    border: none;
+    transform: translateX(2px);
 }
+
+/* Active */
 section[data-testid="stSidebar"] div.stButton > button[kind="primary"] {
-    background-color: #3B82F6 !important;
+    background: linear-gradient(
+        135deg,
+        #3B82F6 0%,
+        #2563EB 100%
+    ) !important;
+    border: 1px solid #60A5FA !important;
     color: #FFFFFF !important;
+    box-shadow: 0 5px 16px rgba(37, 99, 235, 0.25);
 }
+
 section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:hover {
-    background-color: #2563EB !important;
+    background: linear-gradient(
+        135deg,
+        #60A5FA 0%,
+        #3B82F6 100%
+    ) !important;
+    border-color: #93C5FD !important;
+    transform: translateX(2px);
+}
+
+/* AI model status card */
+.sidebar-status-card {
+    margin-top: 1rem;
+    padding: 0.9rem;
+    background: rgba(15, 35, 68, 0.85);
+    border: 1px solid #203A60;
+    border-radius: 13px;
+}
+
+.sidebar-status-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #FFFFFF !important;
+    margin-bottom: 0.7rem;
+    letter-spacing: 0.03em;
+}
+
+.sidebar-status-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.73rem;
+    color: #AFC0D8 !important;
+    margin: 0.42rem 0;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    min-width: 7px;
+    border-radius: 50%;
+    background: #22C55E;
+    box-shadow: 0 0 7px rgba(34,197,94,0.55);
+}
+
+/* Sentiment legend */
+.sidebar-legend {
+    margin-top: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    background: rgba(15, 35, 68, 0.55);
+    border: 1px solid #1C3457;
+    border-radius: 13px;
+}
+
+.sidebar-legend-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #FFFFFF !important;
+    margin-bottom: 0.55rem;
+}
+
+.sidebar-legend-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: #AFC0D8 !important;
+    margin: 0.35rem 0;
+}
+
+.sidebar-legend-left {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.legend-positive {
+    background: #22C55E;
+}
+
+.legend-neutral {
+    background: #F5C518;
+}
+
+.legend-negative {
+    background: #DC2626;
+}
+
+/* Footer */
+.sidebar-footer {
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #1B3152;
+    text-align: center;
+}
+
+.sidebar-footer-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #9FB1CA !important;
+}
+
+.sidebar-footer-sub {
+    font-size: 0.62rem;
+    color: #617592 !important;
+    margin-top: 0.25rem;
+}
+
+.sidebar-version {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.18rem 0.5rem;
+    border-radius: 20px;
+    background: #14284A;
+    color: #7EA7D9 !important;
+    font-size: 0.58rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -523,38 +763,74 @@ def cached_translate(text, lang_code):
 # ASPECT KEYWORDS (15 aspects)
 # =============================================================
 ASPECT_KEYWORDS = {
-    "Course Content": ["content", "course content", "material", "materials", "topics",
-                        "topic", "lessons", "lesson", "curriculum", "concepts", "concept",
-                        "theory", "information", "syllabus"],
-    "Instructor": ["instructor", "teacher", "professor", "lecturer", "mentor", "teaching",
-                   "teach", "taught", "explained", "explanation", "lecture", "lectures"],
-    "Assignments": ["assignment", "assignments", "homework", "exercise", "exercises",
-                     "project", "projects", "task", "tasks"],
-    "Quizzes & Assessments": ["quiz", "quizzes", "test", "tests", "exam", "exams",
-                               "assessment", "assessments", "grading", "grade", "grades"],
-    "Difficulty": ["difficult", "difficulty", "easy", "easier", "hard", "challenging",
-                   "challenge", "complex", "complicated", "simple", "beginner", "advanced"],
-    "Learning Experience": ["learn", "learned", "learning", "experience", "understand",
-                             "understanding", "helpful", "useful", "skill", "skills",
-                             "improved", "improve"],
-    "Course Structure": ["structure", "structured", "organized", "organised", "organization",
-                          "sequence", "order", "module", "modules", "section", "sections"],
-    "Platform": ["platform", "website", "app", "application", "interface", "portal",
-                 "system", "dashboard", "navigation"],
-    "Video & Audio": ["video", "videos", "audio", "sound", "recording", "recordings",
-                       "playback", "visuals", "voice"],
-    "Certificates": ["certificate", "certificates", "certification", "credential",
-                      "credentials", "diploma"],
-    "Duration": ["duration", "length", "time", "hours", "hour", "week", "weeks", "short", "long", "pace", "pacing"],
-    "Value": ["value", "worth", "price", "cost", "affordable", "expensive", "cheap",
-              "money"],
-    "Practical Application": ["practical", "application", "applications", "real-world",
-                               "real world", "hands-on", "hands on", "apply", "applied",
-                               "implementation", "practice"],
-    "Relevance": ["relevant", "relevance", "up-to-date", "up to date", "outdated",
-                  "current", "industry"],
-    "Overall Experience": ["overall", "experience", "satisfied", "satisfaction", "enjoyed",
-                            "enjoy", "recommend", "recommended", "great course", "amazing"],
+    "Course Content": [
+            "content", "topic", "topics", "lesson", "lessons", "material", "materials","curriculum", "concept", "concepts", "subject", "subjects", "course content",
+            "course material", "learning material", "study material", "lecture", "lectures","theory", "theories", "case study", "case studies"
+        ],
+    "Instructor": [
+            "instructor", "teacher", "professor", "lecturer", "trainer", "educator", "teaching", "teach", "taught", "explanation", "explained", "explain",
+            "instruction", "instructions", "guidance", "feedback", "presentation","presenter", "teaching style", "teaching method", "instructor style","instructor feedback"
+        ],
+    "Assignments": [
+            "assignment", "assignments", "homework", "exercise", "exercises", "task","tasks", "project", "projects", "submission", "submissions", "peer review",
+            "peer reviewed", "practical assignment", "graded assignment"
+        ],
+    "Quizzes & Assessments": [
+            "quiz", "quizzes", "test", "tests", "exam", "exams", "assessment","assessments", "graded quiz", "graded quizzes", "graded test", "graded tests",
+            "final exam", "final assessment", "knowledge check", "knowledge checks","evaluation", "evaluations"
+        ],
+    "Difficulty": [
+            "difficult", "difficulty", "hard", "easy", "challenging", "confusing","complex", "simple", "complicated", "advanced", "beginner", "basic",
+            "struggle", "struggled", "struggling", "manageable", "overwhelming","overwhelmed", "straightforward", "too difficult", "too easy",
+            "easy to understand", "hard to understand"
+        ],
+    "Learning Experience": [
+            "learning", "learn", "learned", "learning experience", "understand","understanding", "skills", "skill", "educational", "insight", "insights",
+            "improve", "improvement", "progress", "learned a lot", "learn something","gained knowledge", "gained skills", "new skills", "new knowledge"
+        ],
+    "Course Structure": [
+            "structure", "structured", "organized", "organised", "organization","organisation", "sequence", "module", "modules", "section", "sections",
+            "chapter", "chapters", "unit", "units", "course flow", "course structure","course organization", "course organisation", "well organized",
+            "well organised", "poorly organized", "poorly organised"
+        ],
+    "Platform": [
+            "platform", "website", "interface", "user interface", "UI", "app","application", "navigation", "navigate", "loading", "load", "buffering",
+            "playback", "technical", "technical issue", "technical issues", "technology","software", "bug", "bugs", "error", "errors", "login", "access", "accessibility"
+        ],
+    "Video & Audio": [
+            "video", "videos", "lecture video", "lecture videos", "video quality","video resolution", "video clarity", "audio", "audio quality", "sound quality",
+            "sound", "voice quality", "voice", "subtitles", "subtitle", "captions","caption", "transcript", "transcripts", "video playback", "audio clarity"
+        ],
+    "Certificates": [
+            "certificate", "certificates", "certification", "certifications","credential", "credentials", "completion certificate", "course certificate",
+            "certificate of completion", "digital certificate", "certification process"
+        ],
+    "Duration": [
+            "duration", "course duration", "course length", "length", "hour", "hours","week", "weeks", "day", "days", "time commitment", "time required","study time", "learning time", "completion time", "too long", "too short",
+            "time consuming", "time-consuming", "pace", "pacing"
+        ],
+    "Value": [
+            "value", "worth", "price", "cost", "money", "benefit", "benefits","valuable", "worthwhile", "affordable", "expensive", "cheap", "pricing",
+            "course fee", "fee", "value for money", "worth the money", "worth the price","return on investment", "ROI"
+        ],
+    "Practical Application": [
+            "practical", "practical application", "real world", "real-world", "real life","real-life", "hands on", "hands-on", "hands on experience", "industry example",
+            "industry examples", "real world example", "real world examples","apply knowledge", "apply skills", "applying knowledge", "applying skills",
+            "practical skills", "practical knowledge"
+        ],
+    "Relevance": [
+            "relevant", "relevance", "up to date", "up-to-date", "current information","modern", "outdated", "obsolete", "industry relevant", "industry relevance",
+            "job relevant", "career relevant", "relevant to my work","relevant to my career"
+        ],
+    "Overall Experience": [
+            "overall experience", "course experience", "overall course experience","overall learning experience", "student experience", "my experience",
+            "my overall experience", "experience with the course","experience of the course", "general experience", "overall impression",
+            "general impression", "overall satisfaction", "course satisfaction","overall feeling", "general feeling", "overall opinion", "general opinion",
+            "opinion about the course", "opinion of the course", "enjoyed the course","enjoyment of the course", "satisfied with the course",
+            "dissatisfied with the course", "happy with the course","unhappy with the course", "liked the course", "loved the course",
+            "disliked the course", "recommend the course", "recommend this course","would recommend", "not recommend", "course was", "course felt",
+            "felt about the course"
+        ],
 }
 ASPECT_NAMES = list(ASPECT_KEYWORDS.keys())
 
@@ -563,8 +839,69 @@ ASPECT_ICONS = {
     "Quizzes & Assessments": "📝", "Difficulty": "🎯", "Learning Experience": "🎓",
     "Course Structure": "🏗️", "Platform": "💻", "Video & Audio": "🎥",
     "Certificates": "🏆", "Duration": "⏱️", "Value": "💰",
-    "Practical Application": "🔧", "Relevance": "🔗", "Overall Experience": "⭐",
+    "Practical Application": "🔧", "Relevance": "🔗", "Overall Experience": "🔹",
 }
+
+# Flat, two-tone SVG icons used in place of plain emoji for headers, so the look is
+# consistent across every browser/OS (emoji fonts render very differently across
+# platforms) and matches the requested reference design.
+_HEADER_ICONS = {
+    "cap": ('<svg class="header-icon" viewBox="80 90 530 425" xmlns="http://www.w3.org/2000/svg">'
+            '<path d="M232,290H470V395C470,440 415,455 350,455C285,455 232,440 232,395Z" fill="#FFFFFF"/>'
+            '<path d="M207,290V395C207,455 270,480 350,480C430,480 495,452 495,395V290" fill="none" stroke="#4C1D95" stroke-width="50"/>'
+            '<path d="M340,100L592,232L340,358L95,232Z" fill="#4C1D95"/>'
+            '<rect x="528" y="258" width="40" height="140" fill="#4C1D95"/>'
+            '<circle cx="548" cy="418" r="27" fill="#E9A81E"/>'
+            '</svg>'),
+    "chat": ('<svg class="header-icon" viewBox="13 9 74 63" xmlns="http://www.w3.org/2000/svg">'
+             '<defs><linearGradient id="bblg" x1="0" y1="0" x2="0" y2="1">'
+             '<stop offset="0" stop-color="#CFCAE0"/><stop offset="0.38" stop-color="#F3E9FB"/>'
+             '<stop offset="0.68" stop-color="#EADCF7"/><stop offset="1" stop-color="#B69EDC"/></linearGradient></defs>'
+             '<path d="M27,48L28,70L46,56Z" fill="#B49CDA"/>'
+             '<ellipse cx="50" cy="34" rx="36" ry="24" fill="url(#bblg)"/>'
+             '</svg>'),
+    "bulb": ('<svg class="header-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
+             '<path d="M24 4a14 14 0 0 0-8 25.4c1.6 1.2 2.6 3 2.6 4.9V36h10.8v-1.7c0-1.9 1-3.7 2.6-4.9A14 14 0 0 0 24 4z" fill="#FBBF24"/>'
+             '<rect x="18.5" y="39" width="11" height="3.4" rx="1.2" fill="#B45309"/>'
+             '<rect x="19.5" y="43.5" width="9" height="2.6" rx="1.2" fill="#B45309"/>'
+             '</svg>'),
+    "link": ('<svg class="header-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
+             '<rect x="4" y="16" width="20" height="16" rx="8" fill="#93C5FD"/>'
+             '<rect x="24" y="16" width="20" height="16" rx="8" fill="#3B82F6"/>'
+             '<rect x="16" y="20" width="16" height="8" rx="4" fill="#1D4ED8"/>'
+             '</svg>'),
+    "clipboard": ('<svg class="header-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
+                  '<rect x="10" y="6" width="28" height="38" rx="4" fill="#FDBA74"/>'
+                  '<rect x="16" y="2" width="16" height="8" rx="3" fill="#EA580C"/>'
+                  '<rect x="15" y="18" width="18" height="3" rx="1.5" fill="#FFFFFF"/>'
+                  '<rect x="15" y="25" width="18" height="3" rx="1.5" fill="#FFFFFF"/>'
+                  '<rect x="15" y="32" width="12" height="3" rx="1.5" fill="#FFFFFF"/>'
+                  '</svg>'),
+    "chart": ('<svg class="header-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
+              '<rect x="6" y="24" width="8" height="18" rx="2" fill="#93C5FD"/>'
+              '<rect x="20" y="14" width="8" height="28" rx="2" fill="#3B82F6"/>'
+              '<rect x="34" y="6" width="8" height="36" rx="2" fill="#1D4ED8"/>'
+              '</svg>'),
+    "info": ('<svg class="header-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
+             '<circle cx="24" cy="24" r="20" fill="#BFDBFE"/>'
+             '<circle cx="24" cy="15" r="3" fill="#1D4ED8"/>'
+             '<rect x="20.5" y="21" width="7" height="16" rx="3" fill="#1D4ED8"/>'
+             '</svg>'),
+}
+
+
+_ICON_RATIO = {"cap": 530 / 425, "chat": 74 / 63}
+
+
+def hicon(name, size=None):
+    """Inline SVG for a header icon. `size` = height in px (width follows the icon's aspect ratio)."""
+    if name not in ("cap", "chat"):
+        return {"clipboard": "📋", "link": "🔗", "bulb": "💡", "chart": "📊", "info": "ℹ️"}.get(name, "")
+    svg = _HEADER_ICONS.get(name, "")
+    if size:
+        svg = svg.replace('class="header-icon"',
+                          f'class="header-icon" style="height:{size}px;width:{size * _ICON_RATIO[name]:.1f}px;"')
+    return svg
 
 # Actionable suggestions shown for every sentiment — POSITIVE notes reinforce what's
 # working, NEGATIVE/NEUTRAL suggest an improvement.
@@ -657,16 +994,57 @@ def split_sentences(text):
     return [p.strip() for p in parts if p.strip()]
 
 
+# Splits a sentence into clauses on contrastive conjunctions/semicolons. This matters
+# because a single sentence often praises one aspect and criticizes another —
+# "The instructor was good and the content was useful, but the assignments were
+# difficult." — without this, every aspect mentioned anywhere in that sentence gets
+# handed the EXACT SAME full-sentence text, so they all get the exact same sentiment
+# prediction (e.g. every aspect shows identical "Neutral" instead of a real mixture
+# of Positive/Negative). Splitting on "but/however/although/..." isolates each
+# aspect's own clause so its sentiment is judged on its own words.
+_CLAUSE_SPLIT_RE = re.compile(
+    r",?\s+\b(?:but|however|although|though|whereas|except|yet)\b\s+|\s*;\s*",
+    re.IGNORECASE,
+)
+
+
+def split_clauses(sentence):
+    parts = _CLAUSE_SPLIT_RE.split(sentence)
+    parts = [p.strip() for p in parts if p and p.strip()]
+    return parts or [sentence]
+
+
+_GENERIC_ASPECTS = {"Learning Experience", "Overall Experience"}
+
+
 def extract_aspect_mentions(text):
+    """Returns {aspect: clause}. Each clause is scored on its own words. Generic aspects
+    ("Learning Experience" / "Overall Experience") only appear when the clause isn't
+    already about something more specific, so "Some topics were useful" is just Course
+    Content and "the overall experience was average" is just Overall Experience."""
     found = {}
     sentences = split_sentences(text) or [text]
-    for aspect, keywords in ASPECT_KEYWORDS.items():
-        for sent in sentences:
-            low = sent.lower()
-            if any(kw in low for kw in keywords):
-                found[aspect] = sent
-                break
-    return found
+    for sent in sentences:
+        for clause in split_clauses(sent):
+            low = clause.lower()
+            matched = [a for a, kws in ASPECT_KEYWORDS.items() if any(kw in low for kw in kws)]
+            specific = [a for a in matched if a not in _GENERIC_ASPECTS]
+            if "Overall Experience" in matched:
+                keep = specific + ["Overall Experience"]
+            elif specific:
+                keep = specific
+            else:
+                keep = matched
+            parts = [p.strip() for p in re.split(r"\s+and\s+|\s*,\s*|\s+while\s+", clause) if p.strip()]
+            for a in keep:
+                phrase = clause
+                if len(keep) > 1 and len(parts) > 1:
+                    for p in parts:
+                        if len(p.split()) >= 2 and any(kw in p.lower() for kw in ASPECT_KEYWORDS[a]):
+                            phrase = p
+                            break
+                found.setdefault(a, phrase)
+    return {a: found[a] for a in ASPECT_KEYWORDS if a in found}
 
 
 # =============================================================
@@ -719,78 +1097,138 @@ def majority_sentiment(pos, neu, neg):
 # SHARED RENDER HELPERS
 # =============================================================
 def render_hero():
+    hero = st.container(key="hero-card")
+    with hero:
+        _render_hero_inner()
+    st.markdown("---")
+
+
+def _render_hero_inner():
     title_col, badge_col = st.columns([3, 1])
     with title_col:
-        st.markdown('<p class="main-header">🎓 Course Feedback Sentiment Analysis</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="main-header">{hicon("cap")} Course Feedback Sentiment Analysis</p>', unsafe_allow_html=True)
         st.markdown('<p class="sub-header">Analyze student feedback, discover key aspects, and understand what drives sentiment — powered by AI.</p>', unsafe_allow_html=True)
     with badge_col:
         st.markdown(
             '<div class="info-badge-card">'
-            '<div class="badge-title">🎓 AI Education Analytics</div>'
-            '<div class="badge-body">Sentiment • Aspects • Explainability</div>'
+            f'<div class="badge-title">{hicon("cap", size=20)} AI Education Analytics</div>'
+            '<div class="badge-body">Sentiment<br>Aspects<br>Explainability</div>'
             '</div>', unsafe_allow_html=True)
-    st.markdown("---")
 
 
 def render_footer():
-    st.markdown('<div class="app-footer">🎓 Course Feedback Sentiment Analysis • AI-Powered Education Analytics • Created By Afsah Arshad</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="app-footer">{hicon("cap", size=16)} Course Feedback Sentiment Analysis • AI-Powered Education Analytics • Created By Afsah Arshad</div>', unsafe_allow_html=True)
 
 
 def render_aspect_cards(mentions_dict, engine="Combined"):
-    """mentions_dict: {aspect: sentence}. Renders a sentiment summary strip, then a
-    3-col card grid with sentiment, confidence, the detected sentence, and a suggestion.
-    Uses the same model `engine` as the overall sentiment prediction, so a review that
-    scores Neutral overall (e.g. via the Combined model) doesn't show aspects scored by a
-    different, single model that may disagree with the overall verdict."""
-    if not mentions_dict:
-        st.info("No specific course aspects (Content, Instructor, Difficulty, etc.) were detected in this review.")
-        return None
-    items = list(mentions_dict.items())
-    preds, confs = batch_predict([s for _, s in items], engine=engine)
+    """
+    Displays detected course aspects in 3-column cards.
 
-    # Summary strip: how many aspects landed Positive / Neutral / Negative. This is
-    # what actually explains an overall-Neutral verdict — a mixed spread across
-    # aspects, rather than every aspect independently being "neutral".
-    pos_n = sum(1 for p in preds if p == "POSITIVE")
-    neu_n = sum(1 for p in preds if p == "NEUTRAL")
-    neg_n = sum(1 for p in preds if p == "NEGATIVE")
-    total = len(preds)
-    m1, m2, m3 = st.columns(3)
-    m1.metric("🟢 Positive aspects", f"{pos_n}/{total}")
-    m2.metric("🟡 Neutral aspects", f"{neu_n}/{total}")
-    m3.metric("🔴 Negative aspects", f"{neg_n}/{total}")
-    if total > 1:
-        bar_html = (
-            '<div style="display:flex;width:100%;height:10px;border-radius:6px;overflow:hidden;margin:0.4rem 0 1rem 0;">'
-            f'<div style="width:{pos_n/total*100:.1f}%;background:#22C55E;"></div>'
-            f'<div style="width:{neu_n/total*100:.1f}%;background:#F59E0B;"></div>'
-            f'<div style="width:{neg_n/total*100:.1f}%;background:#DC2626;"></div>'
-            '</div>'
+    Each card includes:
+    - Aspect name
+    - Sentiment
+    - Confidence
+    - Sentiment-specific note/suggestion
+
+    Positive  -> reinforces what is working well
+    Neutral   -> suggests an area for clarification/improvement
+    Negative  -> provides an actionable improvement suggestion
+    """
+    if not mentions_dict:
+        st.info(
+            "No specific course aspects (Content, Instructor, Difficulty, etc.) "
+            "were detected in this review."
         )
-        st.markdown(bar_html, unsafe_allow_html=True)
+        return None
+
+    items = list(mentions_dict.items())
+
+    preds, confs = batch_predict(
+        [sentence for _, sentence in items],
+        engine=engine
+    )
 
     cols_per_row = 3
+
     for i in range(0, len(items), cols_per_row):
-        row_items = list(zip(items[i:i + cols_per_row], preds[i:i + cols_per_row], confs[i:i + cols_per_row]))
+
+        row_items = list(
+            zip(
+                items[i:i + cols_per_row],
+                preds[i:i + cols_per_row],
+                confs[i:i + cols_per_row]
+            )
+        )
+
         cols = st.columns(cols_per_row)
+
         for col, ((aspect, sentence), pred, conf) in zip(cols, row_items):
+
             with col:
                 with st.container(border=True):
-                    st.markdown(f"**{ASPECT_ICONS.get(aspect, '🔹')} {aspect}**")
-                    st.markdown(f"{SENT_DOT[pred]} {pred.capitalize()}")
+
+                    # -------------------------------------------------
+                    # Aspect name
+                    # -------------------------------------------------
+                    st.markdown(
+                        f"**{ASPECT_ICONS.get(aspect, '🔹')} {aspect}**"
+                    )
+
+                    # -------------------------------------------------
+                    # Sentiment
+                    # -------------------------------------------------
+                    st.markdown(
+                        f"{SENT_DOT[pred]} {pred.capitalize()}"
+                    )
+
+                    # -------------------------------------------------
+                    # Confidence
+                    # -------------------------------------------------
                     st.progress(float(conf))
                     st.caption(f"Confidence: {conf:.4f}")
-                    snippet = sentence if len(sentence) <= 140 else sentence[:137].rstrip() + "…"
-                    st.caption(f"📝 “{snippet}”")
+
+                    # -------------------------------------------------
+                    # Sentiment-specific note / suggestion
+                    # -------------------------------------------------
                     suggestion = get_aspect_suggestion(aspect, pred)
+
                     if suggestion:
-                        label = "Note" if pred == "POSITIVE" else "Suggestion"
-                        st.markdown(f"💡 *{label}: {suggestion}*")
+
+                        if pred == "POSITIVE":
+                            insight_title = "💚 Positive Note"
+                            insight_class = "aspect-insight-positive"
+
+                        elif pred == "NEUTRAL":
+                            insight_title = "💡 Improvement Note"
+                            insight_class = "aspect-insight-neutral"
+
+                        else:
+                            insight_title = "🔧 Improvement Suggestion"
+                            insight_class = "aspect-insight-negative"
+
+                        st.markdown(
+                            f"""
+                            <div class="aspect-insight {insight_class}">
+                                <div class="aspect-insight-title">
+                                    {insight_title}
+                                </div>
+                                <div>
+                                    {html_lib.escape(suggestion)}
+                                </div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
     return pd.DataFrame({
         "Aspect": [a for a, _ in items],
         "Sentiment": preds,
         "Confidence": np.round(confs, 4),
         "Sentence": [s for _, s in items],
+        "Suggestion": [
+            get_aspect_suggestion(a, p) or ""
+            for (a, _), p in zip(items, preds)
+        ],
     })
 
 
@@ -844,25 +1282,28 @@ def render_explainable_section(text, pred_label, show_header=True):
     a single header/caption followed by a blue horizontal bar chart of the top
     positive-contributing words. Returns the figure (or None)."""
     if show_header:
-        st.markdown('<p class="section-header">💡 Explainable AI (SHAP)</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="result-header">{hicon("bulb")} Explainable AI (SHAP)</p>', unsafe_allow_html=True)
     st.caption("Words that influenced the prediction")
     contrib_df = get_word_contributions(text, pred_label)
     if contrib_df.empty:
         st.info("None of the words in this review were recognized by the model's vocabulary.")
         return None
 
-    positive_only = contrib_df[contrib_df["Contribution"] > 0]
-    if positive_only.empty:
-        st.info("None of the words in this review pushed toward this prediction.")
-        return None
-    top = positive_only.head(5).sort_values("Contribution")
+    top = contrib_df.head(7).sort_values("Contribution")
 
-    fig, ax = plt.subplots(figsize=(9, max(2.5, 0.5 * len(top))))
-    ax.barh(top["Word"], top["Contribution"], color="#1E7FD8")
+    fig, ax = plt.subplots(figsize=(9, max(3, 0.6 * len(top) + 1.2)))
+    ax.barh(top["Word"], top["Contribution"], color="#2A7AB8")
+    ax.grid(axis="x", color="#E5E7EB", linewidth=0.8)
+    ax.set_axisbelow(True)
     ax.set_title("Top Contributing Words")
     ax.set_xlabel("SHAP Value")
     fig.tight_layout()
-    st.pyplot(fig)
+    import base64
+    png = fig_to_png_bytes(fig).getvalue()
+    st.markdown(
+        f'<div style="background:#FFFFFF;border-radius:6px;padding:0.4rem 0.6rem;">'
+        f'<img src="data:image/png;base64,{base64.b64encode(png).decode()}" style="width:100%;display:block;"></div>',
+        unsafe_allow_html=True)
 
     return fig
 
@@ -887,21 +1328,109 @@ if "nav" not in st.session_state:
     st.session_state.nav = "Single Review Analysis"
 
 with st.sidebar:
-    GRAD_CAP_SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#3B82F6">'
-                     '<path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3z"/>'
-                     '<path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>')
-    st.markdown(f'<div class="sidebar-logo">{GRAD_CAP_SVG}</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-title">Course Feedback<br>Sentiment Analysis</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-sub">AI-Powered Insights for Better Learning</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-author">Created By Afsah Arshad</div>', unsafe_allow_html=True)
+
+    # ---------------------------------------------------------
+    # BRAND
+    # ---------------------------------------------------------
+    GRAD_CAP_SVG = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="80 90 530 425">'
+        '<path d="M207,290V395C207,455 270,480 350,480C430,480 495,452 495,395V290" '
+        'fill="none" stroke="#3B82F6" stroke-width="50"/>'
+        '<path d="M340,100L592,232L340,358L95,232Z" fill="#3B82F6"/>'
+        '<rect x="528" y="258" width="40" height="140" fill="#60A5FA"/>'
+        '<circle cx="548" cy="418" r="27" fill="#93C5FD"/>'
+        '</svg>'
+    )
+
+    st.markdown(
+        '<div class="sidebar-brand">'
+        f'<div class="sidebar-logo-wrap">{GRAD_CAP_SVG}</div>'
+        '<div class="sidebar-title">Course Feedback<br>Sentiment Analysis</div>'
+        '<div class="sidebar-sub">AI-Powered Educational Analytics</div>'
+        '<div class="sidebar-author">Created By Afsah Arshad</div>'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
     st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
 
-    for name, icon in NAV_ITEMS:
+    # ---------------------------------------------------------
+    # ANALYSIS NAVIGATION
+    # ---------------------------------------------------------
+    analysis_items = [
+        ("Single Review Analysis", ":material/chat:"),
+        ("CSV Analysis", ":material/description:"),
+        ("Aspect Analysis", ":material/link:"),
+    ]
+
+    for name, icon in analysis_items:
         is_active = st.session_state.nav == name
-        if st.button(name, key=f"nav_{name}", use_container_width=True, icon=icon,
-                     type="primary" if is_active else "secondary"):
+
+        if st.button(
+            name,
+            key=f"nav_{name}",
+            use_container_width=True,
+            icon=icon,
+            type="primary" if is_active else "secondary"
+        ):
             st.session_state.nav = name
             st.rerun()
+
+    # ---------------------------------------------------------
+    # TOOLS NAVIGATION
+    # ---------------------------------------------------------
+    tool_items = [
+        ("Explainable AI (SHAP)", ":material/lightbulb:"),
+    ]
+
+    for name, icon in tool_items:
+        is_active = st.session_state.nav == name
+
+        if st.button(
+            name,
+            key=f"nav_{name}",
+            use_container_width=True,
+            icon=icon,
+            type="primary" if is_active else "secondary"
+        ):
+            st.session_state.nav = name
+            st.rerun()
+
+    # ---------------------------------------------------------
+    # INFORMATION
+    # ---------------------------------------------------------
+    info_items = [
+        ("About", ":material/info:"),
+    ]
+
+    for name, icon in info_items:
+        is_active = st.session_state.nav == name
+
+        if st.button(
+            name,
+            key=f"nav_{name}",
+            use_container_width=True,
+            icon=icon,
+            type="primary" if is_active else "secondary"
+        ):
+            st.session_state.nav = name
+            st.rerun()
+
+    # ---------------------------------------------------------
+    # FOOTER
+    # ---------------------------------------------------------
+    st.markdown(
+        '<div class="sidebar-footer">'
+        '<div class="sidebar-footer-title">'
+        'Course Feedback Sentiment Analysis'
+        '</div>'
+        '<div class="sidebar-footer-sub">'
+        'AI • NLP • Educational Analytics'
+        '</div>'
+        '<span class="sidebar-version">v1.0</span>'
+        '</div>',
+        unsafe_allow_html=True
+    )
 
 # Left-align original (possibly RTL-script) feedback text wherever it's shown,
 # so Urdu/Arabic text doesn't auto-flip to right-aligned next to its translation.
@@ -932,7 +1461,7 @@ SAMPLE_FEEDBACKS = {
     "Excellent course": "This course is excellent and very easy to follow. I learned a lot.",
     "Very helpful": "The explanations are clear and the practice was very useful.",
     "Good but difficult": "The instructor was good and the content was useful, but some assignments were difficult.",
-    "Average experience": "The course was okay, but some topics needed more examples.",
+    "Average experience": "The course was okay. Some topics were useful, but the overall experience was average.",
     "Poor experience": "The lessons were confusing and the exercises were too hard.",
     "Excellent instructor": "The instructor explained everything clearly and the lectures were engaging.",
     "Difficult assignments": "The assignments were too difficult and took much longer than expected.",
@@ -971,10 +1500,10 @@ def _apply_sample_feedback_to(choice_key, text_key):
 # =============================================================
 if app_mode == "Single Review Analysis":
     render_hero()
-    st.markdown('<p class="section-header">💬 Single Review Analysis</p>', unsafe_allow_html=True)
+    st.markdown(f'<p class="section-header">{hicon("chat")} Single Review Analysis</p>', unsafe_allow_html=True)
     st.caption("Analyze one course review using the trained AI models.")
 
-    st.markdown('<p class="section-header" style="font-size:1.3rem !important;">💬 Single Review</p>', unsafe_allow_html=True)
+    st.markdown(f'<p class="section-header" style="font-size:1.3rem !important;">Single Review</p>', unsafe_allow_html=True)
 
     sample_col, text_col = st.columns(2)
     with sample_col:
@@ -982,12 +1511,11 @@ if app_mode == "Single Review Analysis":
                      key="sample_choice", on_change=_apply_sample_feedback)
     with text_col:
         user_review = st.text_area("Type your own review", max_chars=1000,
-                                    key="single_review_text", placeholder="Type or paste feedback here...",
-                                    value=st.session_state.get("single_review_text",
-                                          "The instructor was good and the content was useful, but some assignments were difficult."))
+                                    key="single_review_text", placeholder="Type or paste feedback here...")
+        st.caption(f"{len(user_review)}/1000")
 
     st.markdown("")
-    st.markdown("### Select Model")
+    st.markdown("**Select Model**")
     radio_col, desc_col, btn_col = st.columns([1, 2, 1])
     with radio_col:
         selected_model = st.radio(
@@ -1003,7 +1531,7 @@ if app_mode == "Single Review Analysis":
             f'</div>', unsafe_allow_html=True)
     with btn_col:
         st.markdown('<div style="height:0.4rem"></div>', unsafe_allow_html=True)
-        analyze_clicked = st.button("▶ Analyze Review", type="primary", use_container_width=True)
+        analyze_clicked = st.button("Analyze Review", type="primary", use_container_width=True, icon=":material/search:")
 
     if analyze_clicked:
         if user_review.strip() == "":
@@ -1027,7 +1555,8 @@ if app_mode == "Single Review Analysis":
                         st.write(translated)
                     st.markdown("")
 
-                st.markdown('<p class="section-header">📋 Single Review Analysis</p>', unsafe_allow_html=True)
+                st.markdown("---")
+                st.markdown(f'<p class="result-header">{hicon("clipboard")} Single Review Analysis</p>', unsafe_allow_html=True)
 
                 with st.container(border=True):
                     left, right = st.columns([1, 1])
@@ -1038,20 +1567,24 @@ if app_mode == "Single Review Analysis":
                     with right:
                         for cls in SENT_ORDER:
                             p = probs[cls]
-                            st.markdown(f"{cls.capitalize()}&nbsp;&nbsp;&nbsp;**{p*100:.0f}%**", unsafe_allow_html=True)
+                            st.markdown(f'<div style="display:flex;justify-content:space-between;padding-right:1.2rem;"><span>{cls.capitalize()}</span><span>{p*100:.0f}%</span></div>', unsafe_allow_html=True)
                             st.progress(float(p))
 
                 st.markdown("")
                 with st.container(border=True):
-                    st.markdown("#### 💡 Key Insight")
+                    st.markdown('<p class="result-header" style="margin-top:0.2rem !important;">💡 Key Insight</p>', unsafe_allow_html=True)
                     st.write(generate_key_insight(sentiment, probs))
 
-                st.markdown('<p class="section-header">🔗 Aspect Analysis</p>', unsafe_allow_html=True)
-                st.caption("Key aspects detected in the feedback and their sentiment")
-                mentions = extract_aspect_mentions(translated)
-                render_aspect_cards(mentions, engine=selected_model)
+                st.markdown("---")
+                with st.container(border=True):
+                    st.markdown(f'<p class="result-header" style="margin-top:0.2rem !important;">{hicon("link")} Aspect Analysis</p>', unsafe_allow_html=True)
+                    st.caption("Key aspects detected in the feedback and their sentiment")
+                    mentions = extract_aspect_mentions(translated)
+                    render_aspect_cards(mentions, engine=selected_model)
 
-                shap_fig = render_explainable_section(translated, sentiment)
+                st.markdown("---")
+                with st.container(border=True):
+                    shap_fig = render_explainable_section(translated, sentiment)
 
                 lr_conf, distil_conf, combined_conf, distil_available = get_engine_confidences(translated)
                 report_txt = (
@@ -1064,7 +1597,7 @@ if app_mode == "Single Review Analysis":
                 mc_col, qa_col = st.columns(2)
                 with mc_col:
                     with st.container(border=True):
-                        st.markdown("#### 📊 Model Confidence")
+                        st.markdown("### 📊 Model Confidence")
                         c1, c2, c3 = st.columns(3)
                         with c1:
                             st.markdown("**Logistic Regression**")
@@ -1083,16 +1616,24 @@ if app_mode == "Single Review Analysis":
                                 st.success("↑ Best")
                 with qa_col:
                     with st.container(border=True):
-                        st.markdown("#### ⚡ Quick Actions")
-                        st.download_button("📄 Download Detailed Report", report_txt.encode("utf-8"),
-                                            "detailed_report.txt", "text/plain", use_container_width=True)
-                        st.download_button("⬇️ Download Results", df_to_csv_bytes(result_df),
-                                            "single_review_result.csv", "text/csv", use_container_width=True)
+                        st.markdown("### ⚡ Quick Actions")
+
+                        def _action_btn(kind, label, icon, *args, **kw):
+                            fn = st.download_button if kind == "dl" else st.button
+                            try:
+                                return fn(label, *args, type="primary", use_container_width=True, icon=icon, **kw)
+                            except TypeError:  # older Streamlit without icon= on this widget
+                                return fn(label, *args, type="primary", use_container_width=True, **kw)
+
+                        _action_btn("dl", "Download Detailed Report", ":material/description:",
+                                    report_txt.encode("utf-8"), "detailed_report.txt", "text/plain")
+                        _action_btn("dl", "Download Results", ":material/download:",
+                                    df_to_csv_bytes(result_df), "single_review_result.csv", "text/csv")
                         if shap_fig is not None:
-                            st.download_button("🖼️ Download Explainable AI Graph", fig_to_png_bytes(shap_fig),
-                                                "explainable_ai_graph.png", "image/png", use_container_width=True)
+                            _action_btn("dl", "Download Explainable AI Graph", ":material/bar_chart:",
+                                        fig_to_png_bytes(shap_fig), "explainable_ai_graph.png", "image/png")
                         else:
-                            st.button("🖼️ Download Explainable AI Graph", disabled=True, use_container_width=True)
+                            _action_btn("btn", "Download Explainable AI Graph", ":material/bar_chart:", disabled=True)
 
                 st.info("ℹ️ SHAP shows which words and tokens contributed to the model's prediction, helping you understand the reasoning behind each sentiment.")
 
@@ -1169,7 +1710,7 @@ elif app_mode == "CSV Analysis":
         review_col = result["review_col"]
         course_col = result["course_col"]
 
-        st.markdown('<p class="section-header">📊 Overall Sentiment Analysis</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="section-header">{hicon("chart")} Overall Sentiment Analysis</p>', unsafe_allow_html=True)
         counts = work_df["Sentiment"].value_counts().reindex(SENT_ORDER, fill_value=0)
         c1, c2, c3 = st.columns(3)
         c1.metric("Positive", int(counts["POSITIVE"]))
@@ -1183,7 +1724,7 @@ elif app_mode == "CSV Analysis":
         ax1.set_ylabel("Count")
         st.pyplot(fig1)
 
-        st.markdown('<p class="section-header">🔗 Aspect-Based Sentiment Analysis</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="section-header">{hicon("link")} Aspect-Based Sentiment Analysis</p>', unsafe_allow_html=True)
         st.caption("Shows which course-related aspects are discussed in the feedback and whether students feel positively, neutrally, or negatively about them.")
 
         @st.cache_data(show_spinner=False)
@@ -1267,7 +1808,7 @@ elif app_mode == "CSV Analysis":
                 st.download_button("🖼️ Download Aspect Graph", fig_to_png_bytes(fig2),
                                     "aspect_graph.png", "image/png", use_container_width=True)
 
-            st.markdown('<p class="section-header">🎓 Course-Wise Aspect Analysis</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="section-header">{hicon("cap")} Course-Wise Aspect Analysis</p>', unsafe_allow_html=True)
             st.caption("Aspect sentiment is grouped using the Course Name or Course ID available in the uploaded CSV.")
 
             if not course_col:
@@ -1312,13 +1853,13 @@ elif app_mode == "CSV Analysis":
                     st.download_button("🖼️ Download Course Graph", fig_to_png_bytes(fig3),
                                         f"{selected_course}_aspect_graph.png", "image/png", use_container_width=True)
 
-            st.markdown('<p class="section-header">📋 Detailed Aspect Results</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="section-header">{hicon("clipboard")} Detailed Aspect Results</p>', unsafe_allow_html=True)
             detailed = aspect_df[["Course", "Aspect", "Sentiment", "Confidence", "Review"]] if course_col else aspect_df[["Aspect", "Sentiment", "Confidence", "Review"]]
             st.dataframe(detailed, use_container_width=True, hide_index=True)
             st.download_button("⬇️ Download Detailed Aspect Results", df_to_csv_bytes(detailed),
                                 "detailed_aspect_results.csv", "text/csv", use_container_width=True)
 
-        st.markdown('<p class="section-header">📋 Analysis Results</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="section-header">{hicon("clipboard")} Analysis Results</p>', unsafe_allow_html=True)
         TRANSLATE_LIMIT = 200
         preview_df = work_df.head(TRANSLATE_LIMIT).copy()
 
@@ -1347,7 +1888,7 @@ elif app_mode == "CSV Analysis":
 # =============================================================
 elif app_mode == "Aspect Analysis":
     render_hero()
-    st.markdown('<p class="main-header">🔗 Aspect Analysis</p>', unsafe_allow_html=True)
+    st.markdown(f'<p class="main-header">{hicon("link")} Aspect Analysis</p>', unsafe_allow_html=True)
     st.caption("Identify important course-related aspects and their sentiment.")
 
     sample_col2, text_col2 = st.columns(2)
@@ -1381,7 +1922,7 @@ elif app_mode == "Aspect Analysis":
 # =============================================================
 elif app_mode == "Explainable AI (SHAP)":
     render_hero()
-    st.markdown('<p class="main-header">💡 Explainable AI (SHAP)</p>', unsafe_allow_html=True)
+    st.markdown(f'<p class="main-header">{hicon("bulb")} Explainable AI (SHAP)</p>', unsafe_allow_html=True)
     st.caption("Understand which words influence the sentiment prediction (based on the Logistic Regression model's TF-IDF weights).")
 
     sample_col3, text_col3 = st.columns(2)
