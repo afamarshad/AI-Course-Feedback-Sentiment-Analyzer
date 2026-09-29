@@ -1,1615 +1,5682 @@
-import io
-import re
+# ============================================================
+# COURSE FEEDBACK SENTIMENT ANALYSIS
+# Modern Education AI Dashboard
+#
+# Created By Afsah Arshad
+#
+# Features:
+#   1. Single Review Analysis
+#   2. CSV File Analysis
+#   3. Aspect Analysis
+#   4. Explainable AI
+#   5. Model Confidence
+#   6. Downloadable Results
+#
+# Models:
+#   - TF-IDF + Logistic Regression
+#   - Fine-tuned Multilingual DistilBERT
+#   - Combined Model
+#
+# CPU Compatible
+# ============================================================
+
+
+# ============================================================
+# IMPORTS
+# ============================================================
+
 import os
-import json
-import html as html_lib
-import joblib
+import re
+import warnings
+from io import BytesIO
+
 import numpy as np
 import pandas as pd
-import requests
-import streamlit as st
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-from langdetect import detect, DetectorFactory
 
-DetectorFactory.seed = 0
+import streamlit as st
+import torch
+import joblib
 
-try:
-    from deep_translator import GoogleTranslator, MyMemoryTranslator
-    TRANSLATOR_AVAILABLE = True
-except Exception:
-    TRANSLATOR_AVAILABLE = False
-
-try:
-    import torch
-    from transformers import AutoTokenizer, AutoModelForSequenceClassification
-    TRANSFORMERS_AVAILABLE = True
-except Exception:
-    TRANSFORMERS_AVAILABLE = False
-
-DISTILBERT_REPO = "Afsah-2027/coursera-multilingual-distilbert"
-
-# =============================================================
-# PAGE CONFIG
-# =============================================================
-st.set_page_config(
-    page_title="Course Feedback Sentiment Analyzer",
-    page_icon="🎓",
-    layout="wide",
-    initial_sidebar_state="expanded",
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    AutoModelForSeq2SeqLM
 )
 
-SENT_COLORS = {"POSITIVE": "#22C55E", "NEUTRAL": "#F5C518", "NEGATIVE": "#DC2626"}
-SENT_ORDER = ["POSITIVE", "NEUTRAL", "NEGATIVE"]
-SENT_EMOJI = {"POSITIVE": "😊", "NEUTRAL": "😐", "NEGATIVE": "😟"}
-SENT_DOT = {"POSITIVE": "🟢", "NEUTRAL": "🟡", "NEGATIVE": "🔴"}
-
-# =============================================================
-# GLOBAL STYLE
-# =============================================================
-st.markdown("""
-<style>
-.main-header { font-size: 2.6rem !important; color: #0F172A !important; font-weight: 900 !important; margin-bottom: 0.3rem !important; line-height: 1.15 !important; letter-spacing: -0.01em; }
-.sub-header { font-size: 1rem !important; color: #4B5563 !important; margin-bottom: 1.2rem !important; }
-.section-header { font-size: 2.05rem !important; font-weight: 800 !important; color: #0F172A !important; margin: 1.4rem 0 0.4rem 0 !important; line-height: 1.2 !important; }
-.result-header { font-size: 1.4rem !important; font-weight: 700 !important; color: #0F172A !important; margin: 1.2rem 0 0.4rem 0 !important; line-height: 1.25 !important; }
-.header-icon { display:inline-flex; vertical-align:-8px; margin-right:0.4rem; }
-.main-header .header-icon { width:65px; height:52px; vertical-align:-10px; margin-right:0.5rem; }
-.section-header .header-icon { width:36px; height:31px; vertical-align:-6px; margin-right:0.6rem; }
-.app-footer { text-align:center; color:#6B7280; font-size:0.85rem; margin-top:2.5rem; padding-top:1rem; border-top:1px solid #E5E7EB; }
-
-.st-key-hero-card { background:#EAF2FF; border:1px solid #DCE8FB; border-radius:16px; padding:1.2rem 1.5rem; }
-.info-badge-card {
-    background:transparent; border:2px solid #1E3A5F; border-radius:12px;
-    padding:0.8rem 1rem; height:100%;
-}
-.info-badge-card .badge-title { font-weight:800; color:#1E3A5F; font-size:1rem; margin-bottom:0.3rem; }
-.info-badge-card .badge-body { color:#1E3A5F; font-size:1rem; line-height:1.6; }
-
-.model-desc-box {
-    background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
-    padding:0.8rem 1rem; height:100%;
-}
-.model-desc-box .model-desc-title { font-weight:800; color:#1D4ED8; margin-bottom:0.25rem; }
-.model-desc-box .model-desc-body { color:#1D4ED8; font-size:1rem; line-height:1.55; }
-
-.insight-box {
-    background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
-    padding:1rem 1.2rem;
-}
-
-.highlight-box {
-    background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
-    padding:1rem 1.2rem; color:#1D4ED8;
-}
-.highlight-box b { color:#1D4ED8; }
-
-.pill {
-    display:inline-block; border:1px solid #D1D5DB; border-radius:8px;
-    padding:0.35rem 0.8rem; margin:0.2rem; font-size:0.92rem; color:#111827;
-}
-
-.check-row { padding:0.6rem 0; border-bottom:1px solid #F1F5F9; }
-
-.orig-text-left { text-align: left !important; white-space: pre-wrap; direction: ltr; unicode-bidi: plaintext; }
-
-section[data-testid="stSidebar"] {
-    background-color: #0B1B38;
-}
-section[data-testid="stSidebar"] > div { padding-top: 1rem; }
-section[data-testid="stSidebar"] * { color: #E5E7EB; }
-
-.sidebar-logo {
-    width: 52px; height: 44px;
-    display:flex; align-items:center; justify-content:center;
-    margin-bottom: 0.6rem;
-}
-.sidebar-logo svg { width: 48px; height: 40px; }
-.sidebar-title { font-size: 1.45rem; font-weight: 800; color: #FFFFFF; line-height:1.25; margin-bottom: 0.4rem;}
-.sidebar-sub { font-size: 0.92rem; color: #9CA3AF; margin-bottom: 0.35rem; }
-.sidebar-author { font-size: 0.88rem; color: #93A3B8; margin-bottom: 0.8rem; }
-.sidebar-divider { border-top: 1px solid #1F2E4D; margin: 0.7rem 0 0.9rem 0; }
-
-section[data-testid="stSidebar"] div.stButton > button {
-    width: 100%;
-    text-align: left;
-    border-radius: 10px;
-    border: none;
-    background-color: #14213F;
-    color: #E5E7EB !important;
-    padding: 0.65rem 0.9rem;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    font-size: 0.95rem;
-    box-shadow: none;
-    display: flex !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-}
-/* Streamlit wraps the icon + label of an icon-button in nested flex
-   containers that are centered by default. Forcing justify-content and
-   text-align on every nested div/span (not just the immediate child) makes
-   sure the icon and label both hug the left edge, at every nesting level
-   Streamlit happens to render — matching the "Aligned to Left" sketch. */
-section[data-testid="stSidebar"] div.stButton > button div,
-section[data-testid="stSidebar"] div.stButton > button span {
-    justify-content: flex-start !important;
-    text-align: left !important;
-}
-section[data-testid="stSidebar"] div.stButton > button p {
-    text-align: left !important;
-    margin: 0 !important;
-}
-/* Small gap so the icon doesn't sit flush against the label once both are
-   pinned to the left instead of being centered as a pair. */
-section[data-testid="stSidebar"] div.stButton > button [data-testid="stIconMaterial"] {
-    margin-right: 0.5rem;
-}
-section[data-testid="stSidebar"] div.stButton > button:hover {
-    background-color: #1D2E52;
-    color: #FFFFFF !important;
-    border: none;
-}
-section[data-testid="stSidebar"] div.stButton > button[kind="primary"] {
-    background-color: #3B82F6 !important;
-    color: #FFFFFF !important;
-}
-section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:hover {
-    background-color: #2563EB !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# =============================================================
-# MODEL LOADING
-# =============================================================
-@st.cache_resource(show_spinner="Loading Logistic Regression model...")
-def load_models():
-    models = {}
-    model_exists = os.path.exists("coursera_tfidf_logistic_model.pkl")
-    vec_exists = os.path.exists("coursera_tfidf_vectorizer.pkl")
-    try:
-        if model_exists:
-            models["model"] = joblib.load("coursera_tfidf_logistic_model.pkl")
-            # Safety net: older/newer scikit-learn versions have added/removed internal
-            # LogisticRegression attributes over time (e.g. `multi_class`). If the pickled
-            # model is missing an attribute the installed sklearn's predict_proba expects,
-            # patch in a sensible default rather than crashing.
-            for attr, default in [("multi_class", "auto")]:
-                if not hasattr(models["model"], attr):
-                    setattr(models["model"], attr, default)
-        if vec_exists:
-            models["vectorizer"] = joblib.load("coursera_tfidf_vectorizer.pkl")
-    except Exception:
-        pass
-    return models
-
-loaded_models = load_models()
-MODEL_READY = "model" in loaded_models and "vectorizer" in loaded_models
+warnings.filterwarnings("ignore")
 
 
-@st.cache_data
-def load_metrics_json():
-    """Loads the real, pre-computed evaluation metrics for both models (no live computation)."""
-    result = {"baseline": None, "distilbert": None}
-    try:
-        if os.path.exists("metrics.json"):
-            with open("metrics.json") as f:
-                result["baseline"] = json.load(f)
-    except Exception:
-        pass
-    try:
-        if os.path.exists("distilbert_metrics.json"):
-            with open("distilbert_metrics.json") as f:
-                result["distilbert"] = json.load(f)
-    except Exception:
-        pass
-    return result
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
+
+st.set_page_config(
+    page_title="Course Feedback Sentiment Analysis",
+    page_icon="🎓",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 
+# ============================================================
+# APPLICATION CONFIGURATION
+# ============================================================
 
-@st.cache_resource(show_spinner="Loading fine-tuned Multilingual DistilBERT (541 MB) — first run may take a minute...")
-def load_distilbert():
-    if not TRANSFORMERS_AVAILABLE:
-        return None
-    try:
-        tok = AutoTokenizer.from_pretrained(DISTILBERT_REPO)
-        model = AutoModelForSequenceClassification.from_pretrained(DISTILBERT_REPO)
-        model.eval()
-        return {"tokenizer": tok, "model": model}
-    except Exception:
-        return None
+APP_TITLE = "Course Feedback Sentiment Analysis"
 
+APP_SUBTITLE = (
+    "Analyze student feedback, discover key aspects, "
+    "and understand what drives sentiment — powered by AI."
+)
 
-def normalize_label(lbl):
-    return str(lbl).strip().upper()
+CREATED_BY = "Created By Afsah Arshad"
 
+DEVICE = torch.device("cpu")
 
-def align_probs(probs, classes):
-    """Reorders an (N, k) probability matrix with arbitrary class order into SENT_ORDER columns."""
-    probs = np.asarray(probs)
-    out = np.zeros((probs.shape[0], len(SENT_ORDER)))
-    for j, cls in enumerate(SENT_ORDER):
-        if cls in classes:
-            out[:, j] = probs[:, classes.index(cls)]
-    sums = out.sum(axis=1, keepdims=True)
-    sums[sums == 0] = 1
-    return out / sums
+MAX_LENGTH = 128
 
+# Performance settings for Streamlit Community Cloud.
+# Multilingual DistilBERT can analyze multilingual text directly,
+# so the very large NLLB translation model is NOT loaded automatically.
+AUTO_TRANSLATE_NON_ENGLISH = False
+CSV_MAX_ROWS = 5000
+DISTILBERT_BATCH_SIZE = 16
+TRANSLATION_BATCH_SIZE = 8
 
-# =============================================================
-# CORE PREDICTION HELPERS
-# =============================================================
-def batch_predict_lr(texts):
-    """Raw TF-IDF + Logistic Regression predictions. Returns (probs, classes)."""
-    clean = [t if isinstance(t, str) and t.strip() else " " for t in texts]
-    if not MODEL_READY:
-        n = len(clean)
-        return np.tile([1 / 3, 1 / 3, 1 / 3], (n, 1)), SENT_ORDER
-    try:
-        vec = loaded_models["vectorizer"].transform(clean)
-        model = loaded_models["model"]
-        probs = model.predict_proba(vec)
-        classes = [normalize_label(c) for c in model.classes_]
-        return probs, classes
-    except Exception:
-        n = len(clean)
-        return np.tile([1 / 3, 1 / 3, 1 / 3], (n, 1)), SENT_ORDER
+# Local Hugging Face translation model.
+# The model is downloaded once from Hugging Face and then
+# cached locally by Transformers. No Google Translate/API
+# request is used for translation.
+TRANSLATION_MODEL_NAME = "facebook/nllb-200-distilled-600M"
+TRANSLATION_TARGET_LANGUAGE = "eng_Latn"
+TRANSLATION_MAX_INPUT_LENGTH = 512
+TRANSLATION_MAX_OUTPUT_LENGTH = 128
 
 
-# Known fixed label order from the model's real training run (see distilbert_metrics.json),
-# used as a fallback when the checkpoint's config.id2label doesn't contain readable
-# sentiment names (e.g. generic "LABEL_0"/"LABEL_1"/"LABEL_2").
-DISTILBERT_FALLBACK_LABEL_ORDER = ["NEGATIVE", "NEUTRAL", "POSITIVE"]
+# ============================================================
+# MODEL PATHS / HUGGING FACE CONFIGURATION
+# ============================================================
+
+# The fine-tuned DistilBERT model is stored on Hugging Face because
+# the model weights are too large for the GitHub repository.
+#
+# Local development:
+#   If ./coursera_multilingual_distilbert exists, the app uses it.
+#
+# Streamlit Community Cloud:
+#   The local folder is not required. The app automatically downloads
+#   the model from this Hugging Face repository.
+HF_DISTILBERT_REPO = "afamarshad/coursera-multilingual-distilbert"
+
+LOCAL_DISTILBERT_MODEL_DIR = (
+    "./coursera_multilingual_distilbert"
+)
+
+TFIDF_MODEL_FILE = (
+    "./coursera_tfidf_logistic_model.pkl"
+)
+
+TFIDF_VECTORIZER_FILE = (
+    "./coursera_tfidf_vectorizer.pkl"
+)
 
 
-def batch_predict_distilbert(texts, bundle, chunk_size=32):
-    """Raw fine-tuned multilingual DistilBERT predictions. Returns (probs, classes).
-    Processed in chunks to keep memory bounded for larger batches (e.g. CSV uploads)."""
-    clean = [t if isinstance(t, str) and t.strip() else " " for t in texts]
-    tok = bundle["tokenizer"]
-    model = bundle["model"]
-    all_probs = []
-    classes = None
-    for i in range(0, len(clean), chunk_size):
-        chunk = clean[i:i + chunk_size]
-        inputs = tok(chunk, return_tensors="pt", padding=True, truncation=True, max_length=128)
-        # DistilBERT's forward() doesn't accept `token_type_ids` (unlike full BERT),
-        # but some tokenizer configs still generate it — drop it if present.
-        inputs.pop("token_type_ids", None)
-        with torch.no_grad():
-            logits = model(**inputs).logits
-        probs = torch.softmax(logits, dim=-1).numpy()
-        if classes is None:
-            raw_classes = [normalize_label(model.config.id2label[i]) for i in range(probs.shape[1])]
-            # If the checkpoint's labels don't look like real sentiment names (e.g. "LABEL_0"),
-            # fall back to the known training label order instead of silently losing this model's vote.
-            if not any(c in SENT_ORDER for c in raw_classes) and len(raw_classes) == len(DISTILBERT_FALLBACK_LABEL_ORDER):
-                classes = DISTILBERT_FALLBACK_LABEL_ORDER
-            else:
-                classes = raw_classes
-        all_probs.append(probs)
-    return np.concatenate(all_probs, axis=0), classes
+# ============================================================
+# SENTIMENT LABELS
+# ============================================================
 
-
-def batch_predict(texts, engine="Combined"):
-    """Main entry point used across the app. Returns (labels, confidences) aligned to SENT_ORDER."""
-    lr_probs, lr_classes = batch_predict_lr(texts)
-    lr_aligned = align_probs(lr_probs, lr_classes)
-
-    if engine == "Logistic Regression" or not TRANSFORMERS_AVAILABLE:
-        final = lr_aligned
-    else:
-        bundle = load_distilbert()
-        if bundle is None:
-            final = lr_aligned  # honest fallback if the HF model can't be loaded
-        else:
-            try:
-                db_probs, db_classes = batch_predict_distilbert(texts, bundle)
-                db_aligned = align_probs(db_probs, db_classes)
-                final = db_aligned if engine == "DistilBERT" else (lr_aligned + db_aligned) / 2
-            except Exception:
-                final = lr_aligned
-
-    idx = final.argmax(axis=1)
-    labels = np.array([SENT_ORDER[i] for i in idx])
-    conf = final.max(axis=1)
-    return labels, conf
-
-
-def predict_sentiment(text, model_type="Combined"):
-    preds, confs = batch_predict([text], engine=model_type)
-    return preds[0], float(confs[0])
-
-
-def get_full_probs(text, engine="Combined"):
-    """Returns dict {POSITIVE: p, NEUTRAL: p, NEGATIVE: p} for one text, using the chosen engine."""
-    if not text.strip():
-        return {"POSITIVE": 1 / 3, "NEUTRAL": 1 / 3, "NEGATIVE": 1 / 3}
-    lr_probs, lr_classes = batch_predict_lr([text])
-    lr_aligned = align_probs(lr_probs, lr_classes)[0]
-    if engine == "Logistic Regression" or not TRANSFORMERS_AVAILABLE:
-        final = lr_aligned
-    else:
-        bundle = load_distilbert()
-        if bundle is None:
-            final = lr_aligned
-        else:
-            try:
-                db_probs, db_classes = batch_predict_distilbert([text], bundle)
-                db_aligned = align_probs(db_probs, db_classes)[0]
-                final = db_aligned if engine == "DistilBERT" else (lr_aligned + db_aligned) / 2
-            except Exception:
-                final = lr_aligned
-    return {cls: float(final[i]) for i, cls in enumerate(SENT_ORDER)}
-
-
-def get_engine_confidences(text):
-    """Returns (lr_conf, distilbert_conf, combined_conf, distilbert_available)."""
-    lr_probs, lr_classes = batch_predict_lr([text])
-    lr_conf = float(lr_probs.max(axis=1)[0])
-    db_conf = lr_conf
-    db_available = False
-    if TRANSFORMERS_AVAILABLE:
-        bundle = load_distilbert()
-        if bundle is not None:
-            try:
-                db_probs, _ = batch_predict_distilbert([text], bundle)
-                db_conf = float(db_probs.max(axis=1)[0])
-                db_available = True
-            except Exception:
-                pass
-    combined_conf = (lr_conf + db_conf) / 2
-    return lr_conf, db_conf, combined_conf, db_available
-
-
-def get_word_contributions(text, pred_label):
-    """Returns a DataFrame of Word, Contribution for a linear-model explanation."""
-    if not MODEL_READY:
-        return pd.DataFrame(columns=["Word", "Contribution"])
-    vectorizer = loaded_models["vectorizer"]
-    model = loaded_models["model"]
-    vec = vectorizer.transform([text])
-    classes = [normalize_label(c) for c in model.classes_]
-    if pred_label not in classes:
-        return pd.DataFrame(columns=["Word", "Contribution"])
-    class_idx = classes.index(pred_label)
-    feature_names = np.array(vectorizer.get_feature_names_out())
-    row = vec.toarray()[0]
-    nonzero = np.nonzero(row)[0]
-    contributions = model.coef_[class_idx][nonzero] * row[nonzero]
-    words = feature_names[nonzero]
-    contrib_df = pd.DataFrame({"Word": words, "Contribution": contributions})
-    contrib_df = contrib_df.reindex(contrib_df["Contribution"].abs().sort_values(ascending=False).index)
-    return contrib_df.reset_index(drop=True)
-
-
-def generate_key_insight(sentiment, probs):
-    label = sentiment.lower()
-    others = {k: v for k, v in probs.items() if k != sentiment}
-    spread = max(others.values()) if others else 0
-    top = probs.get(sentiment, 0)
-    if sentiment == "NEUTRAL" and spread > 0.15:
-        return f"The model predicts a {label} sentiment. The feedback contains a mixture of positive and negative observations."
-    elif top > 0.75:
-        return f"The model predicts a {label} sentiment with high confidence."
-    else:
-        return f"The model predicts a {label} sentiment, though the confidence is moderate."
-
-
-LANG_NAMES = {
-    "en": "English", "ur": "Urdu", "zh-cn": "Chinese", "zh": "Chinese", "ko": "Korean",
-    "ru": "Russian", "es": "Spanish", "fr": "French", "de": "German", "hi": "Hindi",
-    "ar": "Arabic", "pt": "Portuguese", "ja": "Japanese", "it": "Italian", "tr": "Turkish",
-    "id": "Indonesian", "vi": "Vietnamese", "bn": "Bengali", "fa": "Persian", "nl": "Dutch",
+LABEL_NAMES = {
+    0: "NEGATIVE",
+    1: "NEUTRAL",
+    2: "POSITIVE"
 }
 
-def detect_language(text):
-    try:
-        code = detect(text)
-        return code, LANG_NAMES.get(code, code.upper())
-    except Exception:
-        return "unknown", "Unknown"
-
-
-# MyMemoryTranslator validates the source language strictly against its own code
-# table (case-sensitive, e.g. "zh-CN" not "zh-cn"), so langdetect's raw codes must
-# be mapped to MyMemory's exact codes or every call raises LanguageNotSupportedException
-# and silently falls through to "no translation" — this was the root cause of
-# translations not appearing on some deployments.
-_MYMEMORY_LANG_MAP = {
-    "ur": "ur-PK", "zh-cn": "zh-CN", "zh": "zh-CN", "zh-tw": "zh-TW",
-    "ko": "ko-KR", "ru": "ru-RU", "es": "es-ES", "fr": "fr-FR", "de": "de-DE",
-    "hi": "hi-IN", "ar": "ar-SA", "pt": "pt-PT", "ja": "ja-JP", "it": "it-IT",
-    "tr": "tr-TR", "id": "id-ID", "vi": "vi-VN", "bn": "bn-IN", "fa": "fa-IR",
-    "nl": "nl-NL",
+DISPLAY_LABELS = {
+    "NEGATIVE": "Negative",
+    "NEUTRAL": "Neutral",
+    "POSITIVE": "Positive"
 }
-_MYMEMORY_TARGET_EN = "en-GB"
-
-# MyMemory's free tier rejects requests over ~500 characters, so long text is
-# translated in chunks and stitched back together.
-_MYMEMORY_CHUNK_LIMIT = 450
 
 
-def _chunk_text(text, limit):
-    parts = re.split(r"(?<=[.!?。！？])\s+", text)
-    chunks, current = [], ""
-    for part in parts:
-        if len(current) + len(part) + 1 > limit:
-            if current:
-                chunks.append(current)
-            current = part
-        else:
-            current = f"{current} {part}".strip()
-    if current:
-        chunks.append(current)
-    return chunks or [text[:limit]]
+# ============================================================
+# SAMPLE FEEDBACK
+# ============================================================
+
+SAMPLE_FEEDBACK = {
+
+    "Excellent course":
+        "This course was excellent. "
+        "The instructor explained everything clearly "
+        "and the assignments were very useful.",
+
+    "Very helpful":
+        "The course was very helpful and easy to understand. "
+        "I learned many useful concepts.",
+
+    "Good but difficult":
+        "The instructor was good and the content was useful, "
+        "but some assignments were difficult.",
+
+    "Average experience":
+        "The course was okay. Some topics were useful, "
+        "but the overall experience was average.",
+
+    "Poor experience":
+        "The course was difficult to follow. "
+        "The assignments were confusing and "
+        "the explanations were not clear.",
+
+    "Excellent instructor":
+        "The instructor was excellent and explained "
+        "difficult topics in a very clear and engaging way.",
+
+    "Difficult assignments":
+        "The assignments were too difficult and required "
+        "much more time than expected.",
+
+    "Good course structure":
+        "The course structure was very organized "
+        "and the lessons were arranged in a logical sequence."
+}
 
 
-def _translate_mymemory(text, lang_code):
-    src = _MYMEMORY_LANG_MAP.get(lang_code, "auto")
-    if len(text) <= _MYMEMORY_CHUNK_LIMIT:
-        return MyMemoryTranslator(source=src, target=_MYMEMORY_TARGET_EN).translate(text)
-    translator = MyMemoryTranslator(source=src, target=_MYMEMORY_TARGET_EN)
-    return " ".join(translator.translate(c) for c in _chunk_text(text, _MYMEMORY_CHUNK_LIMIT))
+# ============================================================
+# ASPECT KEYWORDS
+# ============================================================
+
+ASPECT_KEYWORDS = {
+
+    "Course Content": [
+        "content", "topic", "topics", "lesson", "lessons", "material", "materials",
+        "curriculum", "concept", "concepts", "subject", "subjects", "course content",
+        "course material", "learning material", "study material", "lecture", "lectures",
+        "theory", "theories", "case study", "case studies"
+    ],
+
+    "Instructor": [
+        "instructor", "teacher", "professor", "lecturer", "trainer", "educator",
+        "teaching", "teach", "taught", "explanation", "explained", "explain",
+        "instruction", "instructions", "guidance", "feedback", "presentation",
+        "presenter", "teaching style", "teaching method", "instructor style",
+        "instructor feedback"
+    ],
+
+    "Assignments": [
+        "assignment", "assignments", "homework", "exercise", "exercises", "task",
+        "tasks", "project", "projects", "submission", "submissions", "peer review",
+        "peer reviewed", "practical assignment", "graded assignment"
+    ],
+
+    "Quizzes & Assessments": [
+        "quiz", "quizzes", "test", "tests", "exam", "exams", "assessment",
+        "assessments", "graded quiz", "graded quizzes", "graded test", "graded tests",
+        "final exam", "final assessment", "knowledge check", "knowledge checks",
+        "evaluation", "evaluations"
+    ],
+
+    "Difficulty": [
+        "difficult", "difficulty", "hard", "easy", "challenging", "confusing",
+        "complex", "simple", "complicated", "advanced", "beginner", "basic",
+        "struggle", "struggled", "struggling", "manageable", "overwhelming",
+        "overwhelmed", "straightforward", "too difficult", "too easy",
+        "easy to understand", "hard to understand"
+    ],
+
+    "Learning Experience": [
+        "learning", "learn", "learned", "learning experience", "understand",
+        "understanding", "skills", "skill", "educational", "insight", "insights",
+        "improve", "improvement", "progress", "learned a lot", "learn something",
+        "gained knowledge", "gained skills", "new skills", "new knowledge"
+    ],
+
+    "Course Structure": [
+        "structure", "structured", "organized", "organised", "organization",
+        "organisation", "sequence", "module", "modules", "section", "sections",
+        "chapter", "chapters", "unit", "units", "course flow", "course structure",
+        "course organization", "course organisation", "well organized",
+        "well organised", "poorly organized", "poorly organised"
+    ],
+
+    "Platform": [
+        "platform", "website", "interface", "user interface", "UI", "app",
+        "application", "navigation", "navigate", "loading", "load", "buffering",
+        "playback", "technical", "technical issue", "technical issues", "technology",
+        "software", "bug", "bugs", "error", "errors", "login", "access", "accessibility"
+    ],
+
+    "Video & Audio": [
+        "video", "videos", "lecture video", "lecture videos", "video quality",
+        "video resolution", "video clarity", "audio", "audio quality", "sound quality",
+        "sound", "voice quality", "voice", "subtitles", "subtitle", "captions",
+        "caption", "transcript", "transcripts", "video playback", "audio clarity"
+    ],
+
+    "Certificates": [
+        "certificate", "certificates", "certification", "certifications",
+        "credential", "credentials", "completion certificate", "course certificate",
+        "certificate of completion", "digital certificate", "certification process"
+    ],
+
+    "Duration": [
+        "duration", "course duration", "course length", "length", "hour", "hours",
+        "week", "weeks", "day", "days", "time commitment", "time required",
+        "study time", "learning time", "completion time", "too long", "too short",
+        "time consuming", "time-consuming", "pace", "pacing"
+    ],
+
+    "Value": [
+        "value", "worth", "price", "cost", "money", "benefit", "benefits",
+        "valuable", "worthwhile", "affordable", "expensive", "cheap", "pricing",
+        "course fee", "fee", "value for money", "worth the money", "worth the price",
+        "return on investment", "ROI"
+    ],
+
+    "Practical Application": [
+        "practical", "practical application", "real world", "real-world", "real life",
+        "real-life", "hands on", "hands-on", "hands on experience", "industry example",
+        "industry examples", "real world example", "real world examples",
+        "apply knowledge", "apply skills", "applying knowledge", "applying skills",
+        "practical skills", "practical knowledge"
+    ],
+
+    "Relevance": [
+        "relevant", "relevance", "up to date", "up-to-date", "current information",
+        "modern", "outdated", "obsolete", "industry relevant", "industry relevance",
+        "job relevant", "career relevant", "relevant to my work",
+        "relevant to my career"
+    ],
+
+    "Overall Experience": [
+        "overall experience", "course experience", "overall course experience",
+        "overall learning experience", "student experience", "my experience",
+        "my overall experience", "experience with the course",
+        "experience of the course", "general experience", "overall impression",
+        "general impression", "overall satisfaction", "course satisfaction",
+        "overall feeling", "general feeling", "overall opinion", "general opinion",
+        "opinion about the course", "opinion of the course", "enjoyed the course",
+        "enjoyment of the course", "satisfied with the course",
+        "dissatisfied with the course", "happy with the course",
+        "unhappy with the course", "liked the course", "loved the course",
+        "disliked the course", "recommend the course", "recommend this course",
+        "would recommend", "not recommend", "course was", "course felt",
+        "felt about the course"
+    ]
+
+}
 
 
-def _translate_google_direct(text):
-    """Last-resort fallback: hit Google's public (unofficial) translate endpoint
-    directly over HTTPS, bypassing deep_translator entirely. This works from hosts
-    where deep_translator's GoogleTranslator is blocked for other reasons (e.g. a
-    stale/rotated endpoint) but plain outbound HTTPS to Google still succeeds."""
-    resp = requests.get(
-        "https://translate.googleapis.com/translate_a/single",
-        params={"client": "gtx", "sl": "auto", "tl": "en", "dt": "t", "q": text},
-        timeout=8,
+# ============================================================
+# ASPECT ICONS
+# ============================================================
+
+ASPECT_ICONS = {
+
+    "Course Content": "📖",
+    "Instructor": "👤",
+    "Assignments": "📄",
+    "Difficulty": "🎯",
+    "Learning Experience": "💡",
+    "Course Structure": "🗂️",
+    "Platform": "🖥️",
+    "Certificates": "🏷️",
+    "Duration": "⏱️",
+    "Value": "💎"
+}
+
+
+# ============================================================
+# SESSION STATE
+# ============================================================
+
+if "active_page" not in st.session_state:
+    st.session_state.active_page = "Single Review Analysis"
+
+if "review_text" not in st.session_state:
+    st.session_state.review_text = ""
+
+if "single_result" not in st.session_state:
+    st.session_state.single_result = None
+
+if "csv_results" not in st.session_state:
+    st.session_state.csv_results = None
+
+if "csv_model" not in st.session_state:
+    st.session_state.csv_model = "Combined"
+
+if "csv_review_column" not in st.session_state:
+    st.session_state.csv_review_column = None
+
+
+# ============================================================
+# CUSTOM COMPACT DIVIDER
+# ============================================================
+
+def compact_divider():
+    st.markdown(
+        '<hr class="compact-divider">',
+        unsafe_allow_html=True
     )
-    resp.raise_for_status()
-    data = resp.json()
-    return "".join(seg[0] for seg in data[0] if seg[0])
 
 
-def _translate_one(text, lang_code, target="en"):
-    """Try three independent translation providers in order. Returns None
-    (never raises) if all of them fail."""
-    try:
-        result = GoogleTranslator(source="auto", target=target).translate(text)
-        if result and result.strip():
-            return result
-    except Exception:
-        pass
+# ============================================================
+# CUSTOM CSS
+# ============================================================
 
-    try:
-        result = _translate_mymemory(text, lang_code)
-        if result and result.strip():
-            return result
-    except Exception:
-        pass
+st.markdown(
+    """
+    <style>
 
-    try:
-        result = _translate_google_direct(text)
-        if result and result.strip():
-            return result
-    except Exception:
-        pass
+    .key-insight-text {
+        white-space: normal;
+        overflow: visible;
+        width: 100%;
+        font-size: 16px;
+        line-height: 1.5;
+        padding-bottom: 8px;
+    }
 
-    return None
+    .capability-heading {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 1.05rem;
+        font-weight: 600;
+        line-height: 1.3;
+        margin-bottom: 1rem;
+    }
+
+    .model-card-title {
+        white-space: normal;
+        overflow: visible;
+        word-break: normal;
+        overflow-wrap: break-word;
+        font-size: 1.08rem;
+        font-weight: 700;
+        line-height: 1.3;
+        min-height: 2.8rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .sentiment-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+    }
+
+    .sentiment-circle {
+        width: 12px;
+        height: 12px;
+        min-width: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .positive-circle {
+        background-color: #22c55e;
+    }
+
+    .negative-circle {
+        background-color: #ef4444;
+    }
+
+    .neutral-circle {
+        background-color: #facc15;
+    }
+
+    /* ============================================================
+       MAIN HEADER
+       ============================================================ */
+
+    /* ============================================================
+       MAIN HEADER
+       Native Streamlit container styling — no raw HTML markup.
+       ============================================================ */
+
+    .st-key-main_header {
+        background: #eaf3ff;
+        border: 1px solid #d7e6f8;
+        border-radius: 14px;
+        padding: 24px 28px 22px 28px;
+        margin: 0;
+    }
+
+    .st-key-main_header [data-testid="stHorizontalBlock"] {
+        align-items: flex-start;
+        gap: 24px;
+    }
+
+    .st-key-main_header [data-testid="stColumn"]:first-child
+    [data-testid="stHorizontalBlock"] {
+        align-items: flex-start;
+    }
+
+    .st-key-main_header [data-testid="stColumn"]:first-child
+    [data-testid="stColumn"]:first-child {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .st-key-main_header [data-testid="stColumn"]:first-child {
+        min-width: 0;
+    }
+
+    .st-key-main_header h2 {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 2.85rem !important;
+        line-height: 1.08 !important;
+        letter-spacing: -0.025em !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+    }
+
+    .st-key-header_info {
+        border: 1.5px solid #123f78 !important;
+        border-radius: 10px !important;
+        background: transparent !important;
+        padding: 12px 22px 16px 16px !important;
+        box-sizing: border-box;
+        min-height: 0 !important;
+    }
+
+    .st-key-header_info p {
+        margin: 0 !important;
+        padding: 0 !important;
+        color: #123f78 !important;
+    }
+
+    .st-key-header_info [data-testid="stMarkdownContainer"] {
+        padding: 0 !important;
+    }
+
+    .header-info-title {
+        color: #123f78 !important;
+        font-size: 0.98rem !important;
+        font-weight: 700 !important;
+        line-height: 1.3 !important;
+        margin: 0 0 5px 0 !important;
+    }
+
+    .header-info-text {
+        color: #123f78 !important;
+        font-size: 0.88rem !important;
+        font-weight: 500 !important;
+        line-height: 1.45 !important;
+        margin: 0 !important;
+    }
+
+    .main-header-title {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 2.85rem !important;
+        line-height: 1.08 !important;
+        letter-spacing: -0.025em;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+    }
+
+    .main-header-subtitle {
+        margin: 10px 0 0 0 !important;
+        padding: 0 !important;
+        font-size: 1.08rem !important;
+        line-height: 1.5 !important;
+        color: #667085 !important;
+    }
+
+    @media (max-width: 900px) {
+        .st-key-main_header {
+            padding: 20px;
+        }
+
+        .st-key-main_header [data-testid="stHorizontalBlock"] {
+            gap: 14px;
+        }
+
+        .main-header-title {
+            font-size: 2.35rem !important;
+        }
+    }
+
+    /* ============================================================
+       COMPACT DIVIDERS
+       Use a custom rule instead of Streamlit's default divider
+       so the vertical spacing is fully controlled.
+       ============================================================ */
+
+    .compact-divider {
+        border: 0 !important;
+        border-top: 1px solid #d1d5db !important;
+        margin: 0.55rem 0 !important;
+        padding: 0 !important;
+        height: 0 !important;
+        display: block !important;
+    }
+
+    /* Keep page headings close to the divider above them. */
+    div[data-testid="stHeading"] h1,
+    h1 {
+        margin-top: 0.35rem !important;
+    }
+
+    /* Keep the header-to-divider transition compact. */
+    .main-header-divider {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* ============================================================
+       BUTTON + SIDEBAR THEME
+       ============================================================ */
+
+    /* Make all main-page buttons and download buttons blue */
+    div.stButton > button,
+    div.stDownloadButton > button,
+    button[kind="secondary"],
+    button[kind="primary"] {
+        background-color: #2563eb !important;
+        color: #ffffff !important;
+        border: 1px solid #1d4ed8 !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+    }
+
+    div.stButton > button:hover,
+    div.stDownloadButton > button:hover,
+    button[kind="secondary"]:hover,
+    button[kind="primary"]:hover {
+        background-color: #1d4ed8 !important;
+        color: #ffffff !important;
+        border-color: #1e40af !important;
+    }
+
+    div.stButton > button:focus,
+    div.stDownloadButton > button:focus,
+    button[kind="secondary"]:focus,
+    button[kind="primary"]:focus {
+        color: #ffffff !important;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) !important;
+    }
+
+    /* ============================================================
+       BUTTON ICONS
+       Keep all Streamlit button icons solid white
+       ============================================================ */
+
+    div.stButton > button [data-testid="stIconMaterial"],
+    div.stDownloadButton > button [data-testid="stIconMaterial"],
+    div.stButton > button .material-symbols-rounded,
+    div.stButton > button .material-symbols-outlined,
+    div.stDownloadButton > button .material-symbols-rounded,
+    div.stDownloadButton > button .material-symbols-outlined {
+        color: #ffffff !important;
+        fill: #ffffff !important;
+        font-variation-settings:
+            "FILL" 1,
+            "wght" 700,
+            "GRAD" 0,
+            "opsz" 24 !important;
+    }
+
+    /* Navy/dark-blue sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #0b1f3a !important;
+    }
+
+    section[data-testid="stSidebar"] > div {
+        background-color: #0b1f3a !important;
+    }
+
+    /* Move the entire sidebar content slightly upward */
+    section[data-testid="stSidebar"] > div {
+        padding-top: 0.75rem !important;
+    }
+
+    section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+        padding-top: 0.75rem !important;
+    }
+
+    /* Sidebar text */
+    section[data-testid="stSidebar"] * {
+        color: #ffffff !important;
+    }
+
+    section[data-testid="stSidebar"] .stCaption,
+    section[data-testid="stSidebar"] small {
+        color: #dbeafe !important;
+    }
+
+    /* Sidebar navigation: keep the entire icon + text group left aligned */
+    section[data-testid="stSidebar"] div.stButton > button {
+        justify-content: flex-start !important;
+        text-align: left !important;
+    }
+
+    section[data-testid="stSidebar"] div.stButton > button > div {
+        width: auto !important;
+        flex: 0 0 auto !important;
+        justify-content: flex-start !important;
+        text-align: left !important;
+    }
+
+    section[data-testid="stSidebar"] div.stButton > button p {
+        margin: 0 !important;
+        text-align: left !important;
+    }
+
+    /* Sidebar button icons: solid white */
+    section[data-testid="stSidebar"] div.stButton > button [data-testid="stIconMaterial"],
+    section[data-testid="stSidebar"] div.stButton > button .material-symbols-rounded,
+    section[data-testid="stSidebar"] div.stButton > button .material-symbols-outlined {
+        color: #ffffff !important;
+        fill: #ffffff !important;
+        font-variation-settings:
+            "FILL" 1,
+            "wght" 700,
+            "GRAD" 0,
+            "opsz" 24 !important;
+    }
+
+    /* Sidebar navigation buttons */
+    /* Default: transparent with dark-blue text */
+    section[data-testid="stSidebar"] div.stButton > button[kind="secondary"] {
+        background-color: rgba(255, 255, 255, 0.10) !important;
+        color: #0B1F3A !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+
+    /* Hover: keep transparent and highlight the border in blue */
+    section[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover {
+        background-color: rgba(255, 255, 255, 0.10) !important;
+        color: #0B1F3A !important;
+        border: 1px solid #3B82F6 !important;
+        box-shadow: none !important;
+    }
+
+    /* Selected: blue background with white text */
+    section[data-testid="stSidebar"] div.stButton > button[kind="primary"] {
+        background-color: #3B82F6 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #3B82F6 !important;
+        font-weight: 600 !important;
+        box-shadow: none !important;
+    }
+
+    /* Keep selected button blue */
+    section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:hover,
+    section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:focus,
+    section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:active {
+        background-color: #3B82F6 !important;
+        color: #FFFFFF !important;
+        border-color: #3B82F6 !important;
+        box-shadow: none !important;
+    }
+
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+        color: #ffffff !important;
+    }
+
+    /* Sidebar brand icon: centered, slightly larger, and blue */
+    .sidebar-brand-icon {
+        display: flex;
+        justify-content: flex-start;
+        align-items: flex-start;
+        width: 100%;
+        margin: 0 0 10px 0;
+        padding-left: 4px;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .sidebar-brand-icon svg {
+        width: 46px;
+        height: 46px;
+        display: block;
+        fill: #3B82F6 !important;
+    }
+
+    /* Reduce spacing between sidebar heading and subtitle */
+    .sidebar-brand-title {
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1.25 !important;
+        font-size: 1.45rem !important;
+        font-weight: 700 !important;
+    }
+
+    .sidebar-brand-subtitle {
+        margin: 10px 0 0 0 !important;
+        padding: 0 !important;
+        line-height: 1.35 !important;
+        font-size: 1rem !important;
+        color: #dbeafe !important;
+    }
+
+</style>
+    """,
+    unsafe_allow_html=True
+)
 
 
-def translate_to_english(text, lang_code):
-    """Best-effort translation, trying three independent providers (Google Translate,
-    MyMemory, then a direct Google endpoint call) before finally giving up and
-    returning the original text. This function never raises.
+# ============================================================
+# TEXT CLEANING
+# ============================================================
 
-    Note: NLLB-200 (a ~2.4GB local model) was tried here previously, but loading it
-    alongside DistilBERT reliably exceeded the free hosting tier's memory limit and
-    hard-crashed the app (an OS-level OOM kill, which can't be caught by try/except).
-    It has been removed for stability."""
-    if not text or not text.strip():
-        return text
-    if lang_code in ("en", "unknown"):
-        return text
+def clean_text(text):
 
-    if TRANSLATOR_AVAILABLE:
-        result = _translate_one(text, lang_code)
-        if result and result.strip():
-            return result
+    if text is None:
+        return ""
 
-    # Last resort — never raise, just show the original text.
+    text = str(text).strip()
+
+    text = re.sub(
+        r"\s+",
+        " ",
+        text
+    )
+
     return text
 
 
-@st.cache_data(show_spinner=False)
-def cached_translate(text, lang_code):
-    return translate_to_english(text, lang_code)
+# ============================================================
+# MULTILINGUAL INPUT + LOCAL TRANSLATION
+# ============================================================
 
-
-# =============================================================
-# ASPECT KEYWORDS (15 aspects)
-# =============================================================
-ASPECT_KEYWORDS = {
-    "Course Content": ["content", "course content", "material", "materials", "topics",
-                        "topic", "lessons", "lesson", "curriculum", "concepts", "concept",
-                        "theory", "information", "syllabus"],
-    "Instructor": ["instructor", "teacher", "professor", "lecturer", "mentor", "teaching",
-                   "teach", "taught", "explained", "explanation", "lecture", "lectures"],
-    "Assignments": ["assignment", "assignments", "homework", "exercise", "exercises",
-                     "project", "projects", "task", "tasks"],
-    "Quizzes & Assessments": ["quiz", "quizzes", "test", "tests", "exam", "exams",
-                               "assessment", "assessments", "grading", "grade", "grades"],
-    "Difficulty": ["difficult", "difficulty", "easy", "easier", "hard", "challenging",
-                   "challenge", "complex", "complicated", "simple", "beginner", "advanced"],
-    "Learning Experience": ["learn", "learned", "learning", "experience", "understand",
-                             "understanding", "helpful", "useful", "skill", "skills",
-                             "improved", "improve"],
-    "Course Structure": ["structure", "structured", "organized", "organised", "organization",
-                          "sequence", "order", "module", "modules", "section", "sections"],
-    "Platform": ["platform", "website", "app", "application", "interface", "portal",
-                 "system", "dashboard", "navigation"],
-    "Video & Audio": ["video", "videos", "audio", "sound", "recording", "recordings",
-                       "playback", "visuals", "voice"],
-    "Certificates": ["certificate", "certificates", "certification", "credential",
-                      "credentials", "diploma"],
-    "Duration": ["duration", "length", "time", "hours", "hour", "week", "weeks", "short", "long", "pace", "pacing"],
-    "Value": ["value", "worth", "price", "cost", "affordable", "expensive", "cheap",
-              "money"],
-    "Practical Application": ["practical", "application", "applications", "real-world",
-                               "real world", "hands-on", "hands on", "apply", "applied",
-                               "implementation", "practice"],
-    "Relevance": ["relevant", "relevance", "up-to-date", "up to date", "outdated",
-                  "current", "industry"],
-    "Overall Experience": ["overall", "experience", "satisfied", "satisfaction", "enjoyed",
-                            "enjoy", "recommend", "recommended", "great course", "amazing"],
-}
-ASPECT_NAMES = list(ASPECT_KEYWORDS.keys())
-
-ASPECT_ICONS = {
-    "Course Content": "📖", "Instructor": "👤", "Assignments": "📋",
-    "Quizzes & Assessments": "📝", "Difficulty": "🎯", "Learning Experience": "🎓",
-    "Course Structure": "🏗️", "Platform": "💻", "Video & Audio": "🎥",
-    "Certificates": "🏆", "Duration": "⏱️", "Value": "💰",
-    "Practical Application": "🔧", "Relevance": "🔗", "Overall Experience": "🔹",
-}
-
-# Flat, two-tone SVG icons used in place of plain emoji for headers, so the look is
-# consistent across every browser/OS (emoji fonts render very differently across
-# platforms) and matches the requested reference design.
-_HEADER_ICONS = {
-    "cap": ('<svg class="header-icon" viewBox="80 90 530 425" xmlns="http://www.w3.org/2000/svg">'
-            '<path d="M232,290H470V395C470,440 415,455 350,455C285,455 232,440 232,395Z" fill="#FFFFFF"/>'
-            '<path d="M207,290V395C207,455 270,480 350,480C430,480 495,452 495,395V290" fill="none" stroke="#4C1D95" stroke-width="50"/>'
-            '<path d="M340,100L592,232L340,358L95,232Z" fill="#4C1D95"/>'
-            '<rect x="528" y="258" width="40" height="140" fill="#4C1D95"/>'
-            '<circle cx="548" cy="418" r="27" fill="#E9A81E"/>'
-            '</svg>'),
-    "chat": ('<svg class="header-icon" viewBox="13 9 74 63" xmlns="http://www.w3.org/2000/svg">'
-             '<defs><linearGradient id="bblg" x1="0" y1="0" x2="0" y2="1">'
-             '<stop offset="0" stop-color="#CFCAE0"/><stop offset="0.38" stop-color="#F3E9FB"/>'
-             '<stop offset="0.68" stop-color="#EADCF7"/><stop offset="1" stop-color="#B69EDC"/></linearGradient></defs>'
-             '<path d="M27,48L28,70L46,56Z" fill="#B49CDA"/>'
-             '<ellipse cx="50" cy="34" rx="36" ry="24" fill="url(#bblg)"/>'
-             '</svg>'),
-    "bulb": ('<svg class="header-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
-             '<path d="M24 4a14 14 0 0 0-8 25.4c1.6 1.2 2.6 3 2.6 4.9V36h10.8v-1.7c0-1.9 1-3.7 2.6-4.9A14 14 0 0 0 24 4z" fill="#FBBF24"/>'
-             '<rect x="18.5" y="39" width="11" height="3.4" rx="1.2" fill="#B45309"/>'
-             '<rect x="19.5" y="43.5" width="9" height="2.6" rx="1.2" fill="#B45309"/>'
-             '</svg>'),
-    "link": ('<svg class="header-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
-             '<rect x="4" y="16" width="20" height="16" rx="8" fill="#93C5FD"/>'
-             '<rect x="24" y="16" width="20" height="16" rx="8" fill="#3B82F6"/>'
-             '<rect x="16" y="20" width="16" height="8" rx="4" fill="#1D4ED8"/>'
-             '</svg>'),
-    "clipboard": ('<svg class="header-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
-                  '<rect x="10" y="6" width="28" height="38" rx="4" fill="#FDBA74"/>'
-                  '<rect x="16" y="2" width="16" height="8" rx="3" fill="#EA580C"/>'
-                  '<rect x="15" y="18" width="18" height="3" rx="1.5" fill="#FFFFFF"/>'
-                  '<rect x="15" y="25" width="18" height="3" rx="1.5" fill="#FFFFFF"/>'
-                  '<rect x="15" y="32" width="12" height="3" rx="1.5" fill="#FFFFFF"/>'
-                  '</svg>'),
-    "chart": ('<svg class="header-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
-              '<rect x="6" y="24" width="8" height="18" rx="2" fill="#93C5FD"/>'
-              '<rect x="20" y="14" width="8" height="28" rx="2" fill="#3B82F6"/>'
-              '<rect x="34" y="6" width="8" height="36" rx="2" fill="#1D4ED8"/>'
-              '</svg>'),
-    "info": ('<svg class="header-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">'
-             '<circle cx="24" cy="24" r="20" fill="#BFDBFE"/>'
-             '<circle cx="24" cy="15" r="3" fill="#1D4ED8"/>'
-             '<rect x="20.5" y="21" width="7" height="16" rx="3" fill="#1D4ED8"/>'
-             '</svg>'),
+# NLLB uses FLORES-200 language codes. This mapping covers
+# common languages likely to appear in course feedback.
+NLLB_LANGUAGE_CODES = {
+    "en": "eng_Latn",
+    "es": "spa_Latn",
+    "fr": "fra_Latn",
+    "de": "deu_Latn",
+    "it": "ita_Latn",
+    "pt": "por_Latn",
+    "nl": "nld_Latn",
+    "tr": "tur_Latn",
+    "pl": "pol_Latn",
+    "ru": "rus_Cyrl",
+    "uk": "ukr_Cyrl",
+    "ar": "arb_Arab",
+    "fa": "pes_Arab",
+    "ur": "urd_Arab",
+    "hi": "hin_Deva",
+    "bn": "ben_Beng",
+    "zh-cn": "zho_Hans",
+    "zh-tw": "zho_Hant",
+    "zh": "zho_Hans",
+    "ja": "jpn_Jpan",
+    "ko": "kor_Hang",
+    "vi": "vie_Latn",
+    "th": "tha_Thai",
+    "id": "ind_Latn",
+    "ms": "zsm_Latn",
+    "ro": "ron_Latn",
+    "cs": "ces_Latn",
+    "el": "ell_Grek",
+    "he": "heb_Hebr",
+    "sv": "swe_Latn",
+    "da": "dan_Latn",
+    "fi": "fin_Latn",
+    "no": "nob_Latn",
+    "hu": "hun_Latn"
 }
 
 
-_ICON_RATIO = {"cap": 530 / 425, "chat": 74 / 63}
-
-
-def hicon(name, size=None):
-    """Inline SVG for a header icon. `size` = height in px (width follows the icon's aspect ratio)."""
-    if name not in ("cap", "chat"):
-        return {"clipboard": "📋", "link": "🔗", "bulb": "💡", "chart": "📊", "info": "ℹ️"}.get(name, "")
-    svg = _HEADER_ICONS.get(name, "")
-    if size:
-        svg = svg.replace('class="header-icon"',
-                          f'class="header-icon" style="height:{size}px;width:{size * _ICON_RATIO[name]:.1f}px;"')
-    return svg
-
-# Actionable suggestions shown for every sentiment — POSITIVE notes reinforce what's
-# working, NEGATIVE/NEUTRAL suggest an improvement.
-ASPECT_SUGGESTIONS = {
-    "Course Content": {
-        "POSITIVE": "Content is landing well — keep it as the model for future modules.",
-        "NEGATIVE": "Review and refresh the course material — add more examples and simplify dense sections.",
-        "NEUTRAL": "Consider adding supplementary examples or reading material to deepen the content.",
-    },
-    "Instructor": {
-        "POSITIVE": "Instructor delivery is a strength — capture what's working for onboarding other instructors.",
-        "NEGATIVE": "Provide the instructor with feedback on pacing and clarity of explanations.",
-        "NEUTRAL": "Encourage more interactive Q&A or office hours to strengthen the instructor connection.",
-    },
-    "Assignments": {
-        "POSITIVE": "Assignments are hitting the mark — reuse this format for upcoming modules.",
-        "NEGATIVE": "Re-calibrate assignment difficulty and provide clearer instructions or worked examples.",
-        "NEUTRAL": "Add a few practice assignments with varying difficulty to build confidence gradually.",
-    },
-    "Quizzes & Assessments": {
-        "POSITIVE": "Assessments feel fair and well-calibrated — no changes needed here.",
-        "NEGATIVE": "Review quiz difficulty and grading transparency; consider adding practice quizzes.",
-        "NEUTRAL": "Offer optional practice assessments so students can self-check before graded ones.",
-    },
-    "Difficulty": {
-        "POSITIVE": "Pacing and difficulty are well-tuned for this audience — maintain the current level.",
-        "NEGATIVE": "Add a beginner-friendly on-ramp or prerequisite guide to ease the learning curve.",
-        "NEUTRAL": "Offer optional advanced and beginner tracks so pacing fits more skill levels.",
-    },
-    "Learning Experience": {
-        "POSITIVE": "Students report strong learning outcomes — highlight this course as a benchmark.",
-        "NEGATIVE": "Gather specific feedback on what hindered learning and iterate on the weakest module.",
-        "NEUTRAL": "Add more interactive or hands-on elements to make learning more engaging.",
-    },
-    "Course Structure": {
-        "POSITIVE": "The module sequence is working well — no restructuring needed.",
-        "NEGATIVE": "Reorganize modules into a clearer, more logical sequence with defined milestones.",
-        "NEUTRAL": "Add a visual course roadmap so students can see how modules connect.",
-    },
-    "Platform": {
-        "POSITIVE": "Platform experience is smooth — good baseline to maintain during future updates.",
-        "NEGATIVE": "Investigate platform usability issues — navigation, load times, or broken links.",
-        "NEUTRAL": "Collect specific UX feedback to identify small friction points in the platform.",
-    },
-    "Video & Audio": {
-        "POSITIVE": "Recording quality is a plus — keep the same setup for future recordings.",
-        "NEGATIVE": "Improve recording audio quality and consider re-recording unclear video segments.",
-        "NEUTRAL": "Add captions or transcripts to improve accessibility and clarity.",
-    },
-    "Certificates": {
-        "POSITIVE": "Certificate process is clear and valued — no changes needed.",
-        "NEGATIVE": "Clarify certificate requirements and streamline the issuance process.",
-        "NEUTRAL": "Highlight the certificate's value and how it can be used professionally.",
-    },
-    "Duration": {
-        "POSITIVE": "Course length feels right to students — keep the current pacing.",
-        "NEGATIVE": "Reassess course length — consider splitting into shorter, focused modules.",
-        "NEUTRAL": "Offer a suggested pacing guide so students can plan their time better.",
-    },
-    "Value": {
-        "POSITIVE": "Students feel they're getting good value — a strong point to highlight in marketing.",
-        "NEGATIVE": "Reassess pricing relative to content depth, or add more bonus resources.",
-        "NEUTRAL": "Communicate the course's value proposition more clearly upfront.",
-    },
-    "Practical Application": {
-        "POSITIVE": "Hands-on application is resonating — keep expanding this type of exercise.",
-        "NEGATIVE": "Add more real-world projects or case studies to bridge theory and practice.",
-        "NEUTRAL": "Include at least one capstone-style project to reinforce practical skills.",
-    },
-    "Relevance": {
-        "POSITIVE": "Content feels current and industry-relevant — keep it updated on this cadence.",
-        "NEGATIVE": "Update course content to reflect current industry practices and tools.",
-        "NEUTRAL": "Periodically refresh examples to keep the material feeling current.",
-    },
-    "Overall Experience": {
-        "POSITIVE": "Overall experience is strong — a good candidate for a testimonial or case study.",
-        "NEGATIVE": "Conduct a broader review of the course to identify the biggest pain points.",
-        "NEUTRAL": "Small, consistent improvements across modules could lift the overall experience.",
-    },
+LANGUAGE_DISPLAY_NAMES = {
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "nl": "Dutch",
+    "tr": "Turkish",
+    "pl": "Polish",
+    "ru": "Russian",
+    "uk": "Ukrainian",
+    "ar": "Arabic",
+    "fa": "Persian",
+    "ur": "Urdu",
+    "hi": "Hindi",
+    "bn": "Bengali",
+    "zh-cn": "Chinese",
+    "zh-tw": "Chinese",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "vi": "Vietnamese",
+    "th": "Thai",
+    "id": "Indonesian",
+    "ms": "Malay",
+    "ro": "Romanian",
+    "cs": "Czech",
+    "el": "Greek",
+    "he": "Hebrew",
+    "sv": "Swedish",
+    "da": "Danish",
+    "fi": "Finnish",
+    "no": "Norwegian",
+    "hu": "Hungarian"
 }
 
 
-def get_aspect_suggestion(aspect, sentiment):
-    return ASPECT_SUGGESTIONS.get(aspect, {}).get(sentiment)
+def detect_feedback_language(text):
+    """Fast language detection used only when translation is requested.
+
+    Script checks handle common non-Latin languages immediately. For Latin-script
+    languages, langdetect is used as a fallback. English is recognized cheaply
+    when the text contains only common English/Latin characters.
+    """
+    text = clean_text(text)
+    if not text:
+        return "unknown"
+
+    if re.search(r"[\u0900-\u097F]", text):
+        return "hi"
+    if re.search(r"[\u0980-\u09FF]", text):
+        return "bn"
+    if re.search(r"[\u4E00-\u9FFF]", text):
+        return "zh"
+    if re.search(r"[\u3040-\u30FF]", text):
+        return "ja"
+    if re.search(r"[\uAC00-\uD7AF]", text):
+        return "ko"
+    if re.search(r"[\u0400-\u04FF]", text):
+        return "ru"
+
+    # Arabic-script languages require actual detection because Urdu/Persian/
+    # Arabic share a script.
+    if re.search(r"[\u0600-\u06FF]", text):
+        try:
+            from langdetect import detect
+            detected = detect(text).lower()
+            if detected in NLLB_LANGUAGE_CODES:
+                return detected
+        except Exception:
+            pass
+        return "ur"
+
+    # Cheap English signal. This prevents langdetect from running for most
+    # normal course feedback, which is the common case in this application.
+    words = re.findall(r"[A-Za-z]+", text)
+    if words:
+        common = {"the", "and", "was", "were", "is", "are", "this", "course",
+                  "instructor", "assignment", "assignments", "very", "good",
+                  "great", "excellent", "but", "with", "for", "to", "of", "my"}
+        if len(words) <= 3 or sum(w.lower() in common for w in words) >= 1:
+            return "en"
+
+    try:
+        from langdetect import detect
+        detected = detect(text).lower()
+        if detected in NLLB_LANGUAGE_CODES:
+            return detected
+    except Exception:
+        pass
+
+    return "unknown"
+
+def language_display_name(code):
+    code = str(code).lower()
+
+    return LANGUAGE_DISPLAY_NAMES.get(
+        code,
+        code.upper() if code != "unknown" else "Unknown"
+    )
 
 
-def split_sentences(text):
-    text = str(text)
-    parts = re.split(r"(?<=[.!?۔])\s+", text)
-    return [p.strip() for p in parts if p.strip()]
+@st.cache_resource(show_spinner=False)
+def load_translation_model():
+    """
+    Load the local NLLB translation model once per Streamlit
+    process. The first run downloads the model from Hugging Face;
+    subsequent runs reuse the local Hugging Face cache.
+    """
+    translation_tokenizer = AutoTokenizer.from_pretrained(
+        TRANSLATION_MODEL_NAME
+    )
+
+    translation_model = (
+        AutoModelForSeq2SeqLM.from_pretrained(
+            TRANSLATION_MODEL_NAME
+        )
+    )
+
+    translation_model.to(DEVICE)
+    translation_model.eval()
+
+    return (
+        translation_tokenizer,
+        translation_model
+    )
 
 
-# Splits a sentence into clauses on contrastive conjunctions/semicolons. This matters
-# because a single sentence often praises one aspect and criticizes another —
-# "The instructor was good and the content was useful, but the assignments were
-# difficult." — without this, every aspect mentioned anywhere in that sentence gets
-# handed the EXACT SAME full-sentence text, so they all get the exact same sentiment
-# prediction (e.g. every aspect shows identical "Neutral" instead of a real mixture
-# of Positive/Negative). Splitting on "but/however/although/..." isolates each
-# aspect's own clause so its sentiment is judged on its own words.
-_CLAUSE_SPLIT_RE = re.compile(
-    r",?\s+\b(?:but|however|although|though|whereas|except|yet)\b\s+|\s*;\s*",
-    re.IGNORECASE,
-)
+def _get_nllb_language_id(tokenizer, language_code):
+    """
+    Support both current and older Transformers tokenizer
+    implementations.
+    """
+    if hasattr(tokenizer, "lang_code_to_id"):
+
+        language_id = tokenizer.lang_code_to_id.get(
+            language_code
+        )
+
+        if language_id is not None:
+            return language_id
+
+    return tokenizer.convert_tokens_to_ids(
+        language_code
+    )
 
 
-def split_clauses(sentence):
-    parts = _CLAUSE_SPLIT_RE.split(sentence)
-    parts = [p.strip() for p in parts if p and p.strip()]
-    return parts or [sentence]
+def translate_texts_to_english(texts, source_language):
+    """Translate texts in small batches using the lazily loaded NLLB model."""
+    cleaned_texts = [clean_text(text) for text in texts]
+    if not cleaned_texts:
+        return []
+    if source_language == "en":
+        return cleaned_texts
+
+    source_code = NLLB_LANGUAGE_CODES.get(source_language)
+    if source_code is None:
+        raise ValueError(
+            f"The detected language '{source_language}' is not mapped to NLLB."
+        )
+
+    tokenizer, model = load_translation_model()
+    tokenizer.src_lang = source_code
+    target_language_id = _get_nllb_language_id(tokenizer, TRANSLATION_TARGET_LANGUAGE)
+
+    translated = []
+    for start_idx in range(0, len(cleaned_texts), TRANSLATION_BATCH_SIZE):
+        batch = cleaned_texts[start_idx:start_idx + TRANSLATION_BATCH_SIZE]
+        inputs = tokenizer(
+            batch,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=TRANSLATION_MAX_INPUT_LENGTH
+        )
+        inputs = {key: value.to(DEVICE) for key, value in inputs.items()}
+        with torch.inference_mode():
+            generated = model.generate(
+                **inputs,
+                forced_bos_token_id=target_language_id,
+                max_length=TRANSLATION_MAX_OUTPUT_LENGTH
+            )
+        translated.extend(
+            clean_text(x) for x in tokenizer.batch_decode(
+                generated, skip_special_tokens=True
+            )
+        )
+    return translated
 
 
-_GENERIC_ASPECTS = {"Learning Experience", "Overall Experience"}
+def translate_feedback_batch(texts, force=False):
+    """Detect and translate reviews only when explicitly required.
 
+    This function is intentionally lazy: NLLB is never loaded merely because
+    the app starts. English reviews never load NLLB, and multilingual DistilBERT
+    can be used directly without translation.
+    """
+    cleaned_texts = [clean_text(text) for text in texts]
+    results = [
+        {
+            "original": text,
+            "translated": text,
+            "language": "unknown",
+            "language_name": "Unknown",
+            "was_translated": False
+        }
+        for text in cleaned_texts
+    ]
+    if not cleaned_texts:
+        return results
 
-def extract_aspect_mentions(text):
-    """Returns {aspect: clause}. Each clause is scored on its own words. Generic aspects
-    ("Learning Experience" / "Overall Experience") only appear when the clause isn't
-    already about something more specific, so "Some topics were useful" is just Course
-    Content and "the overall experience was average" is just Overall Experience."""
-    found = {}
-    sentences = split_sentences(text) or [text]
-    for sent in sentences:
-        for clause in split_clauses(sent):
-            low = clause.lower()
-            matched = [a for a, kws in ASPECT_KEYWORDS.items() if any(kw in low for kw in kws)]
-            specific = [a for a in matched if a not in _GENERIC_ASPECTS]
-            if "Overall Experience" in matched:
-                keep = specific + ["Overall Experience"]
-            elif specific:
-                keep = specific
-            else:
-                keep = matched
-            parts = [p.strip() for p in re.split(r"\s+and\s+|\s*,\s*|\s+while\s+", clause) if p.strip()]
-            for a in keep:
-                phrase = clause
-                if len(keep) > 1 and len(parts) > 1:
-                    for p in parts:
-                        if len(p.split()) >= 2 and any(kw in p.lower() for kw in ASPECT_KEYWORDS[a]):
-                            phrase = p
-                            break
-                found.setdefault(a, phrase)
-    return {a: found[a] for a in ASPECT_KEYWORDS if a in found}
-
-
-# =============================================================
-# COLUMN DETECTION
-# =============================================================
-REVIEW_COL_CANDIDATES = ["feedback", "review", "reviews", "text", "comment", "comments",
-                          "description", "student_feedback", "student review", "student_review"]
-COURSE_COL_CANDIDATES = ["course", "courseid", "course_id", "coursename", "course_name",
-                          "course title", "coursetitle", "course_title", "course name"]
-
-def detect_review_column(df):
-    cols_lower = {c.lower().strip(): c for c in df.columns}
-    for cand in REVIEW_COL_CANDIDATES:
-        if cand in cols_lower:
-            return cols_lower[cand]
-    obj_cols = list(df.select_dtypes(include="object").columns)
-    if not obj_cols:
-        return df.columns[0]
-    return max(obj_cols, key=lambda c: df[c].astype(str).str.len().mean())
-
-
-def detect_course_column(df, review_col):
-    cols_lower = {c.lower().strip(): c for c in df.columns}
-    for cand in COURSE_COL_CANDIDATES:
-        if cand in cols_lower:
-            return cols_lower[cand]
-    for c in df.columns:
-        if c != review_col and df[c].dtype == object:
-            return c
-    return None
-
-
-def fig_to_png_bytes(fig):
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-    buf.seek(0)
-    return buf
-
-
-def df_to_csv_bytes(df):
-    return df.to_csv(index=False).encode("utf-8-sig")
-
-
-def majority_sentiment(pos, neu, neg):
-    counts = {"POSITIVE": pos, "NEUTRAL": neu, "NEGATIVE": neg}
-    return max(counts, key=counts.get)
-
-
-# =============================================================
-# SHARED RENDER HELPERS
-# =============================================================
-def render_hero():
-    hero = st.container(key="hero-card")
-    with hero:
-        _render_hero_inner()
-    st.markdown("---")
-
-
-def _render_hero_inner():
-    title_col, badge_col = st.columns([3, 1])
-    with title_col:
-        st.markdown(f'<p class="main-header">{hicon("cap")} Course Feedback Sentiment Analysis</p>', unsafe_allow_html=True)
-        st.markdown('<p class="sub-header">Analyze student feedback, discover key aspects, and understand what drives sentiment — powered by AI.</p>', unsafe_allow_html=True)
-    with badge_col:
-        st.markdown(
-            '<div class="info-badge-card">'
-            f'<div class="badge-title">{hicon("cap", size=20)} AI Education Analytics</div>'
-            '<div class="badge-body">Sentiment<br>Aspects<br>Explainability</div>'
-            '</div>', unsafe_allow_html=True)
-
-
-def render_footer():
-    st.markdown(f'<div class="app-footer">{hicon("cap", size=16)} Course Feedback Sentiment Analysis • AI-Powered Education Analytics • Created By Afsah Arshad</div>', unsafe_allow_html=True)
-
-
-def render_aspect_cards(mentions_dict, engine="Combined"):
-    """mentions_dict: {aspect: sentence}. 3-col card grid: aspect, sentiment, bar, confidence."""
-    if not mentions_dict:
-        st.info("No specific course aspects (Content, Instructor, Difficulty, etc.) were detected in this review.")
-        return None
-    items = list(mentions_dict.items())
-    preds, confs = batch_predict([s for _, s in items], engine=engine)
-    cols_per_row = 3
-    for i in range(0, len(items), cols_per_row):
-        row_items = list(zip(items[i:i + cols_per_row], preds[i:i + cols_per_row], confs[i:i + cols_per_row]))
-        cols = st.columns(cols_per_row)
-        for col, ((aspect, sentence), pred, conf) in zip(cols, row_items):
-            with col:
-                with st.container(border=True):
-                    st.markdown(f"**{ASPECT_ICONS.get(aspect, '🔹')} {aspect}**")
-                    st.markdown(f"{SENT_DOT[pred]} {pred.capitalize()}")
-                    st.progress(float(conf))
-                    st.caption(f"Confidence: {conf:.4f}")
-    return pd.DataFrame({
-        "Aspect": [a for a, _ in items],
-        "Sentiment": preds,
-        "Confidence": np.round(confs, 4),
-        "Sentence": [s for _, s in items],
-    })
-
-
-def generate_explanation_summary(contrib_df, pred_label, top_n=3):
-    label = pred_label.capitalize()
-    if contrib_df.empty:
-        return f"The model predicted **{label}**, but none of the words in this review were recognized by its vocabulary."
-    positive_words = contrib_df[contrib_df["Contribution"] > 0].head(top_n)["Word"].tolist()
-    negative_words = contrib_df[contrib_df["Contribution"] < 0].head(top_n)["Word"].tolist()
-    parts = [f"This review was classified as **{label}**"]
-    if positive_words:
-        quoted = ", ".join(f"“{w}”" for w in positive_words)
-        parts.append(f"mainly because of words like {quoted}, which pushed the score toward {label.lower()}")
-    if negative_words:
-        quoted = ", ".join(f"“{w}”" for w in negative_words)
-        connector = ", while" if positive_words else "but"
-        parts.append(f"{connector} words like {quoted} pulled it in the opposite direction")
-    return " ".join(parts) + "."
-
-
-def render_highlighted_text(text, contrib_df, max_words=20):
-    """Returns HTML with single-word contributors color-highlighted (green=toward the
-    predicted class, red=away from it). Multi-word n-gram features are skipped."""
-    word_map = {}
-    for _, row in contrib_df.head(max_words).iterrows():
-        w = row["Word"]
-        if " " not in w:
-            word_map[w.lower()] = row["Contribution"]
-    if not word_map:
-        return html_lib.escape(text)
-    max_abs = max(abs(v) for v in word_map.values()) or 1
-    tokens = re.findall(r"\w+|[^\w\s]|\s+", text, flags=re.UNICODE)
-    parts = []
-    for tok in tokens:
-        key = tok.lower()
-        if key in word_map:
-            val = word_map[key]
-            intensity = min(abs(val) / max_abs, 1.0)
-            if val > 0:
-                bg = f"rgba(34,197,94,{0.15 + 0.55 * intensity:.2f})"
-            else:
-                bg = f"rgba(220,38,38,{0.15 + 0.55 * intensity:.2f})"
-            parts.append(f'<span style="background:{bg};border-radius:4px;padding:0 2px;">{html_lib.escape(tok)}</span>')
+    language_groups = {}
+    for index, text in enumerate(cleaned_texts):
+        if not text:
+            continue
+        language = detect_feedback_language(text)
+        results[index]["language"] = language
+        results[index]["language_name"] = language_display_name(language)
+        if language == "en":
+            continue
+        if language in NLLB_LANGUAGE_CODES and (force or AUTO_TRANSLATE_NON_ENGLISH):
+            language_groups.setdefault(language, []).append(index)
         else:
-            parts.append(html_lib.escape(tok))
-    return "".join(parts)
+            # Preserve the original text. This is important for direct
+            # multilingual DistilBERT inference and prevents NLLB startup.
+            results[index]["language_name"] = language_display_name(language)
+
+    for language, indices in language_groups.items():
+        translated_texts = translate_texts_to_english(
+            [cleaned_texts[i] for i in indices], language
+        )
+        for index, translated in zip(indices, translated_texts):
+            results[index]["translated"] = translated
+            results[index]["was_translated"] = True
+
+    return results
 
 
-def render_explainable_section(text, pred_label, show_header=True):
-    """SHAP-style word contribution chart, matching the reference design exactly:
-    a single header/caption followed by a blue horizontal bar chart of the top
-    positive-contributing words. Returns the figure (or None)."""
-    if show_header:
-        st.markdown(f'<p class="result-header">{hicon("bulb")} Explainable AI (SHAP)</p>', unsafe_allow_html=True)
-    st.caption("Words that influenced the prediction")
-    contrib_df = get_word_contributions(text, pred_label)
-    if contrib_df.empty:
-        st.info("None of the words in this review were recognized by the model's vocabulary.")
+def prepare_feedback_for_analysis(text, model_name="Logistic Regression", translate_for_analysis=False):
+    """Prepare feedback according to the selected model.
+
+    DistilBERT is multilingual and therefore analyzes non-English text directly.
+    Logistic Regression and the combined model use the existing English TF-IDF
+    pipeline, so they translate only when translation is requested/needed.
+    """
+    text = clean_text(text)
+    if not text:
+        return "", {
+            "original": "", "translated": "", "language": "unknown",
+            "language_name": "Unknown", "was_translated": False
+        }
+
+    detected = detect_feedback_language(text)
+    needs_translation = translate_for_analysis or model_name in {
+        "Logistic Regression", "Combined"
+    }
+
+    if detected == "en" or not needs_translation:
+        return text, {
+            "original": text,
+            "translated": text,
+            "language": detected,
+            "language_name": language_display_name(detected),
+            "was_translated": False
+        }
+
+    result = translate_feedback_batch([text], force=True)[0]
+    return result["translated"], result
+
+
+# ============================================================
+# SENTENCE SPLITTING
+# ============================================================
+
+def split_into_sentences(text):
+
+    text = clean_text(text)
+
+    if not text:
+        return []
+
+    sentences = re.split(
+        r"(?<=[.!?。！？])\s+",
+        text
+    )
+
+    return [
+        sentence.strip()
+        for sentence in sentences
+        if sentence.strip()
+    ]
+
+
+# ============================================================
+# NORMALIZE MODEL LABEL
+# ============================================================
+
+def normalize_label(value):
+
+    if isinstance(
+        value,
+        (int, np.integer)
+    ):
+
+        return LABEL_NAMES.get(
+            int(value),
+            "NEUTRAL"
+        )
+
+    if isinstance(
+        value,
+        float
+    ):
+
+        if value.is_integer():
+
+            return LABEL_NAMES.get(
+                int(value),
+                "NEUTRAL"
+            )
+
+    text = str(value).strip().upper()
+
+    if text in [
+        "0",
+        "NEGATIVE",
+        "NEG"
+    ]:
+
+        return "NEGATIVE"
+
+    if text in [
+        "1",
+        "NEUTRAL",
+        "NEU"
+    ]:
+
+        return "NEUTRAL"
+
+    if text in [
+        "2",
+        "POSITIVE",
+        "POS"
+    ]:
+
+        return "POSITIVE"
+
+    return text
+
+
+# ============================================================
+# LAZY MODEL LOADING
+# ============================================================
+#
+# Models are loaded only when a feature actually needs them.
+# This keeps the Streamlit page from waiting for DistilBERT during
+# the initial app startup.
+#
+# - TF-IDF + Logistic Regression loads when Logistic/Combined/
+#   Explainable AI features need it.
+# - Multilingual DistilBERT loads only when DistilBERT/Combined
+#   prediction is requested.
+# - NLLB translation is already lazy-loaded below and is only
+#   downloaded when a non-English review needs translation.
+#
+# Streamlit's st.cache_resource keeps each loaded model in memory
+# and reuses it across reruns/sessions of the app process.
+# ============================================================
+
+
+def _get_hf_token():
+    """Return an optional Hugging Face token for private repositories."""
+    try:
+        token = st.secrets.get("HF_TOKEN")
+        if token:
+            return token
+    except Exception:
+        pass
+
+    return os.getenv("HF_TOKEN")
+
+
+@st.cache_resource(show_spinner=False)
+def load_distilbert_model():
+    """
+    Load the fine-tuned multilingual DistilBERT model only when
+    DistilBERT-based prediction is actually requested.
+    """
+
+    if os.path.isdir(LOCAL_DISTILBERT_MODEL_DIR):
+        distilbert_source = LOCAL_DISTILBERT_MODEL_DIR
+    else:
+        distilbert_source = HF_DISTILBERT_REPO
+
+    hf_token = _get_hf_token()
+
+    tokenizer_kwargs = {}
+    model_kwargs = {}
+
+    if hf_token and distilbert_source == HF_DISTILBERT_REPO:
+        tokenizer_kwargs["token"] = hf_token
+        model_kwargs["token"] = hf_token
+
+    try:
+        with st.spinner(
+            "Loading multilingual DistilBERT model for the first time..."
+        ):
+            model_tokenizer = AutoTokenizer.from_pretrained(
+                distilbert_source,
+                **tokenizer_kwargs
+            )
+
+            model = AutoModelForSequenceClassification.from_pretrained(
+                distilbert_source,
+                **model_kwargs
+            )
+
+        model.to(DEVICE)
+        model.eval()
+
+        return model_tokenizer, model
+
+    except Exception as error:
+        raise RuntimeError(
+            "Unable to load the multilingual DistilBERT model.\n\n"
+            f"Source: {distilbert_source}\n"
+            f"Error: {error}"
+        ) from error
+
+
+@st.cache_resource(show_spinner=False)
+def load_tfidf_models():
+    """
+    Load the smaller TF-IDF + Logistic Regression resources only
+    when a feature actually needs them.
+    """
+
+    if not os.path.isfile(TFIDF_MODEL_FILE):
+        raise FileNotFoundError(
+            "Logistic Regression model not found:\n"
+            f"{TFIDF_MODEL_FILE}\n\n"
+            "Make sure this .pkl file is uploaded to GitHub."
+        )
+
+    if not os.path.isfile(TFIDF_VECTORIZER_FILE):
+        raise FileNotFoundError(
+            "TF-IDF vectorizer not found:\n"
+            f"{TFIDF_VECTORIZER_FILE}\n\n"
+            "Make sure this .pkl file is uploaded to GitHub."
+        )
+
+    tfidf_model = joblib.load(TFIDF_MODEL_FILE)
+    tfidf_vectorizer = joblib.load(TFIDF_VECTORIZER_FILE)
+
+    return tfidf_model, tfidf_vectorizer
+
+
+def show_model_loading_error(error):
+    """Display a clear model-loading error without hiding the app UI."""
+    st.error("Unable to load the required trained model.")
+    st.code(str(error))
+
+
+# ============================================================
+# DISTILBERT PREDICTION
+# ============================================================
+
+def _prediction_from_probabilities(probabilities):
+    probabilities = np.asarray(probabilities, dtype=float)[:3]
+    if len(probabilities) < 3:
+        raise ValueError("The DistilBERT model does not appear to be a 3-class model.")
+    label = LABEL_NAMES.get(int(np.argmax(probabilities)), "NEUTRAL")
+    return {
+        "label": label,
+        "confidence": float(probabilities[np.argmax(probabilities)]),
+        "probabilities": {
+            "NEGATIVE": float(probabilities[0]),
+            "NEUTRAL": float(probabilities[1]),
+            "POSITIVE": float(probabilities[2])
+        }
+    }
+
+
+def predict_distilbert_batch(texts, batch_size=DISTILBERT_BATCH_SIZE):
+    cleaned = [clean_text(x) for x in texts]
+    if not cleaned:
+        return []
+    tokenizer, model = load_distilbert_model()
+    outputs = []
+    for start_idx in range(0, len(cleaned), batch_size):
+        batch = cleaned[start_idx:start_idx + batch_size]
+        inputs = tokenizer(
+            batch, return_tensors="pt", padding=True,
+            truncation=True, max_length=MAX_LENGTH
+        )
+        inputs = {key: value.to(DEVICE) for key, value in inputs.items()}
+        with torch.inference_mode():
+            logits = model(**inputs).logits
+            probs = torch.softmax(logits, dim=-1).cpu().numpy()
+        outputs.extend(_prediction_from_probabilities(row) for row in probs)
+    return outputs
+
+
+def predict_distilbert(text):
+    text = clean_text(text)
+    if not text:
+        return None
+    return predict_distilbert_batch([text])[0]
+
+
+def predict_logistic_batch(texts):
+    cleaned = [clean_text(x) for x in texts]
+    if not cleaned:
+        return []
+    tfidf_model, tfidf_vectorizer = load_tfidf_models()
+    vectors = tfidf_vectorizer.transform(cleaned)
+    raw = tfidf_model.predict_proba(vectors)
+    results = []
+    for row in raw:
+        probabilities = {"NEGATIVE": 0.0, "NEUTRAL": 0.0, "POSITIVE": 0.0}
+        for class_value, probability in zip(tfidf_model.classes_, row):
+            label = normalize_label(class_value)
+            if label in probabilities:
+                probabilities[label] = float(probability)
+        label = max(probabilities, key=probabilities.get)
+        results.append({
+            "label": label,
+            "confidence": probabilities[label],
+            "probabilities": probabilities
+        })
+    return results
+
+
+def predict_logistic(text):
+    text = clean_text(text)
+    if not text:
+        return None
+    return predict_logistic_batch([text])[0]
+
+
+def predict_combined(text):
+    logistic = predict_logistic(text)
+    distilbert = predict_distilbert(text)
+    probabilities = {
+        label: (logistic["probabilities"][label] + distilbert["probabilities"][label]) / 2
+        for label in ["NEGATIVE", "NEUTRAL", "POSITIVE"]
+    }
+    label = max(probabilities, key=probabilities.get)
+    return {
+        "label": label,
+        "confidence": probabilities[label],
+        "probabilities": probabilities,
+        "logistic": logistic,
+        "distilbert": distilbert
+    }
+
+
+def predict_combined_batch(texts):
+    logistic_results = predict_logistic_batch(texts)
+    bert_results = predict_distilbert_batch(texts)
+    results = []
+    for logistic, bert in zip(logistic_results, bert_results):
+        probabilities = {
+            label: (logistic["probabilities"][label] + bert["probabilities"][label]) / 2
+            for label in ["NEGATIVE", "NEUTRAL", "POSITIVE"]
+        }
+        label = max(probabilities, key=probabilities.get)
+        results.append({
+            "label": label,
+            "confidence": probabilities[label],
+            "probabilities": probabilities,
+            "logistic": logistic,
+            "distilbert": bert
+        })
+    return results
+
+
+def predict_sentiment(text, model_name):
+    if model_name == "Logistic Regression":
+        return predict_logistic(text)
+    if model_name == "DistilBERT":
+        return predict_distilbert(text)
+    return predict_combined(text)
+
+
+def predict_sentiment_batch(texts, model_name):
+    if model_name == "Logistic Regression":
+        return predict_logistic_batch(texts)
+    if model_name == "DistilBERT":
+        return predict_distilbert_batch(texts)
+    return predict_combined_batch(texts)
+
+
+# ============================================================
+# ASPECT DETECTION
+# ============================================================
+
+def find_aspects(sentence):
+
+    sentence_lower = (
+        sentence.lower()
+    )
+
+    detected = []
+
+    for aspect, keywords in (
+        ASPECT_KEYWORDS.items()
+    ):
+
+        for keyword in keywords:
+
+            pattern = (
+                r"\b"
+                +
+                re.escape(
+                    keyword.lower()
+                )
+                +
+                r"\b"
+            )
+
+            if re.search(
+                pattern,
+                sentence_lower
+            ):
+
+                detected.append(
+                    aspect
+                )
+
+                break
+
+    return detected
+
+
+# ============================================================
+# ASPECT-SPECIFIC CLAUSE SPLITTING
+# ============================================================
+
+def split_into_clauses(sentence):
+
+    sentence = clean_text(
+        sentence
+    )
+
+    if not sentence:
+        return []
+
+    clauses = re.split(
+        r"\s+(?:but|however|although|though|while|whereas|yet|except|"
+        r"and yet|on the other hand)\s+|"
+        r"\s*;\s*|"
+        r"\s*,\s+(?=(?:the|this|that|these|those|my|our|your|"
+        r"some|many|most|an|a)\b)",
+        sentence,
+        flags=re.IGNORECASE
+    )
+
+    cleaned = []
+
+    for clause in clauses:
+
+        clause = clean_text(
+            clause
+        )
+
+        if clause:
+            cleaned.append(
+                clause
+            )
+
+    return cleaned
+
+
+# ============================================================
+# FIND THE RELEVANT CLAUSE FOR AN ASPECT
+# ============================================================
+
+def get_aspect_clauses(
+    sentence,
+    aspect
+):
+
+    clauses = split_into_clauses(
+        sentence
+    )
+
+    keywords = ASPECT_KEYWORDS[
+        aspect
+    ]
+
+    relevant = []
+
+    for clause in clauses:
+
+        clause_lower = clause.lower()
+
+        found = False
+
+        for keyword in keywords:
+
+            pattern = (
+                r"\b"
+                +
+                re.escape(
+                    keyword.lower()
+                )
+                +
+                r"\b"
+            )
+
+            if re.search(
+                pattern,
+                clause_lower
+            ):
+
+                found = True
+                break
+
+        if found:
+
+            relevant.append(
+                clause
+            )
+
+    if not relevant:
+
+        return [
+            sentence
+        ]
+
+    return relevant
+
+
+# ============================================================
+# EXTRACT ASPECT-SPECIFIC TEXT
+# ============================================================
+
+def extract_aspect_sentences(text):
+
+    result = {
+        aspect: []
+        for aspect in ASPECT_KEYWORDS
+    }
+
+    sentences = split_into_sentences(
+        text
+    )
+
+    for sentence in sentences:
+
+        aspects = find_aspects(
+            sentence
+        )
+
+        for aspect in aspects:
+
+            clauses = get_aspect_clauses(
+                sentence,
+                aspect
+            )
+
+            for clause in clauses:
+
+                if clause not in result[aspect]:
+
+                    result[aspect].append(
+                        clause
+                    )
+
+    return result
+
+
+# ============================================================
+# LOCAL ASPECT SENTIMENT LEXICON
+# ============================================================
+
+POSITIVE_SENTIMENT_WORDS = {
+
+    "excellent",
+    "amazing",
+    "awesome",
+    "great",
+    "good",
+    "helpful",
+    "useful",
+    "valuable",
+    "effective",
+    "clear",
+    "clearly",
+    "easy",
+    "easier",
+    "simple",
+    "organized",
+    "well-organized",
+    "engaging",
+    "interesting",
+    "enjoyable",
+    "enjoyed",
+    "informative",
+    "relevant",
+    "practical",
+    "beneficial",
+    "fantastic",
+    "wonderful",
+    "perfect",
+    "strong",
+    "positive",
+    "satisfied",
+    "satisfying",
+    "understandable",
+    "accessible",
+    "logical",
+    "smooth",
+    "convenient",
+    "impressive",
+    "motivating",
+    "insightful",
+    "worthwhile"
+}
+
+
+NEGATIVE_SENTIMENT_WORDS = {
+
+    "bad",
+    "poor",
+    "terrible",
+    "awful",
+    "horrible",
+    "worst",
+    "useless",
+    "confusing",
+    "confused",
+    "difficult",
+    "hard",
+    "challenging",
+    "complex",
+    "unclear",
+    "disorganized",
+    "unorganized",
+    "boring",
+    "frustrating",
+    "frustrated",
+    "annoying",
+    "annoyed",
+    "disappointing",
+    "disappointed",
+    "weak",
+    "negative",
+    "expensive",
+    "waste",
+    "wasted",
+    "slow",
+    "tedious",
+    "stressful",
+    "overwhelming",
+    "unhelpful",
+    "irrelevant",
+    "unnecessary",
+    "complicated",
+    "poorly",
+    "late",
+    "long",
+    "dissatisfied",
+    "difficulties",
+    "problem",
+    "problems",
+    "issue",
+    "issues"
+}
+
+
+# ============================================================
+# NEGATION WORDS
+# ============================================================
+
+NEGATION_WORDS = {
+
+    "not",
+    "no",
+    "never",
+    "neither",
+    "nor",
+    "isn't",
+    "wasn't",
+    "weren't",
+    "aren't",
+    "don't",
+    "doesn't",
+    "didn't",
+    "can't",
+    "cannot",
+    "couldn't",
+    "won't",
+    "wouldn't",
+    "hardly",
+    "barely",
+    "without"
+}
+
+
+# ============================================================
+# INTENSIFIER WORDS
+# ============================================================
+
+INTENSIFIER_WORDS = {
+
+    "very": 1.35,
+    "really": 1.30,
+    "extremely": 1.55,
+    "highly": 1.45,
+    "especially": 1.30,
+    "quite": 1.20,
+    "so": 1.25,
+    "too": 1.20,
+    "absolutely": 1.50,
+    "completely": 1.45,
+    "incredibly": 1.50
+}
+
+
+# ============================================================
+# ASPECT SENTIMENT WORD EXTRACTION
+# ============================================================
+
+def get_aspect_context(
+    clause,
+    aspect,
+    window=7
+):
+
+    words = re.findall(
+        r"\b[\w'-]+\b",
+        clause.lower()
+    )
+
+    if not words:
+        return clause
+
+    aspect_positions = []
+
+    keywords = ASPECT_KEYWORDS[
+        aspect
+    ]
+
+    for index, word in enumerate(
+        words
+    ):
+
+        for keyword in keywords:
+
+            keyword_words = (
+                keyword.lower().split()
+            )
+
+            if (
+                len(keyword_words) == 1
+                and word == keyword_words[0]
+            ):
+
+                aspect_positions.append(
+                    index
+                )
+
+    if not aspect_positions:
+
+        return clause
+
+    start = max(
+        0,
+        min(aspect_positions) - window
+    )
+
+    end = min(
+        len(words),
+        max(aspect_positions) + window + 1
+    )
+
+    return " ".join(
+        words[start:end]
+    )
+
+
+# ============================================================
+# LOCAL ASPECT SENTIMENT
+# ============================================================
+
+def calculate_local_aspect_sentiment(
+    clause,
+    aspect
+):
+
+    context = get_aspect_context(
+        clause,
+        aspect,
+        window=7
+    )
+
+    words = re.findall(
+        r"\b[\w'-]+\b",
+        context.lower()
+    )
+
+    positive_score = 0.0
+    negative_score = 0.0
+
+    positive_hits = []
+    negative_hits = []
+
+    for index, word in enumerate(
+        words
+    ):
+
+        sentiment = None
+
+        if word in POSITIVE_SENTIMENT_WORDS:
+
+            sentiment = "POSITIVE"
+
+        elif word in NEGATIVE_SENTIMENT_WORDS:
+
+            sentiment = "NEGATIVE"
+
+        if sentiment is None:
+            continue
+
+        negation_found = False
+
+        start = max(
+            0,
+            index - 3
+        )
+
+        previous_words = words[
+            start:index
+        ]
+
+        for previous_word in previous_words:
+
+            if previous_word in NEGATION_WORDS:
+
+                negation_found = True
+                break
+
+        intensity = 1.0
+
+        if index > 0:
+
+            previous_word = words[
+                index - 1
+            ]
+
+            intensity = INTENSIFIER_WORDS.get(
+                previous_word,
+                1.0
+            )
+
+        if negation_found:
+
+            if sentiment == "POSITIVE":
+
+                negative_score += (
+                    intensity
+                )
+
+                negative_hits.append(
+                    word
+                )
+
+            else:
+
+                positive_score += (
+                    intensity
+                )
+
+                positive_hits.append(
+                    word
+                )
+
+        else:
+
+            if sentiment == "POSITIVE":
+
+                positive_score += (
+                    intensity
+                )
+
+                positive_hits.append(
+                    word
+                )
+
+            else:
+
+                negative_score += (
+                    intensity
+                )
+
+                negative_hits.append(
+                    word
+                )
+
+    total = (
+        positive_score
+        +
+        negative_score
+    )
+
+    if total == 0:
+
+        return {
+
+            "label": "NEUTRAL",
+
+            "confidence": 0.0,
+
+            "probabilities": {
+
+                "NEGATIVE": 0.0,
+
+                "NEUTRAL": 1.0,
+
+                "POSITIVE": 0.0
+            },
+
+            "evidence": [],
+
+            "context": context
+        }
+
+    if positive_score > negative_score:
+
+        local_label = "POSITIVE"
+
+        margin = (
+            positive_score
+            -
+            negative_score
+        )
+
+    elif negative_score > positive_score:
+
+        local_label = "NEGATIVE"
+
+        margin = (
+            negative_score
+            -
+            positive_score
+        )
+
+    else:
+
+        local_label = "NEUTRAL"
+
+        margin = 0.0
+
+    local_confidence = min(
+        0.95,
+        0.55
+        +
+        (
+            margin
+            /
+            max(total, 1.0)
+        )
+        *
+        0.40
+    )
+
+    if positive_score > negative_score:
+
+        positive_probability = (
+            0.50
+            +
+            0.50
+            *
+            (
+                positive_score
+                /
+                max(total, 1.0)
+            )
+        )
+
+        negative_probability = (
+            0.50
+            *
+            (
+                negative_score
+                /
+                max(total, 1.0)
+            )
+        )
+
+    elif negative_score > positive_score:
+
+        negative_probability = (
+            0.50
+            +
+            0.50
+            *
+            (
+                negative_score
+                /
+                max(total, 1.0)
+            )
+        )
+
+        positive_probability = (
+            0.50
+            *
+            (
+                positive_score
+                /
+                max(total, 1.0)
+            )
+        )
+
+    else:
+
+        positive_probability = 0.25
+        negative_probability = 0.25
+
+    neutral_probability = max(
+        0.0,
+        1.0
+        -
+        positive_probability
+        -
+        negative_probability
+    )
+
+    probabilities = {
+
+        "NEGATIVE":
+            float(negative_probability),
+
+        "NEUTRAL":
+            float(neutral_probability),
+
+        "POSITIVE":
+            float(positive_probability)
+    }
+
+    evidence = (
+        positive_hits
+        +
+        negative_hits
+    )
+
+    return {
+
+        "label": local_label,
+
+        "confidence": float(
+            local_confidence
+        ),
+
+        "probabilities": probabilities,
+
+        "evidence": evidence,
+
+        "context": context
+    }
+
+
+# ============================================================
+# COMBINE LOCAL ASPECT SENTIMENT + DISTILBERT
+# ============================================================
+
+def combine_aspect_predictions(
+    local_prediction,
+    distilbert_prediction
+):
+
+    local_probabilities = (
+        local_prediction[
+            "probabilities"
+        ]
+    )
+
+    model_probabilities = (
+        distilbert_prediction[
+            "probabilities"
+        ]
+    )
+
+    has_local_evidence = (
+        len(
+            local_prediction[
+                "evidence"
+            ]
+        ) > 0
+    )
+
+    if has_local_evidence:
+
+        local_weight = 0.70
+        model_weight = 0.30
+
+    else:
+
+        local_weight = 0.15
+        model_weight = 0.85
+
+    probabilities = {
+
+        label: (
+            local_weight
+            *
+            local_probabilities[label]
+            +
+            model_weight
+            *
+            model_probabilities[label]
+        )
+
+        for label in [
+            "NEGATIVE",
+            "NEUTRAL",
+            "POSITIVE"
+        ]
+    }
+
+    total = sum(
+        probabilities.values()
+    )
+
+    if total > 0:
+
+        probabilities = {
+
+            label:
+                value / total
+
+            for label, value
+            in probabilities.items()
+        }
+
+    label = max(
+        probabilities,
+        key=probabilities.get
+    )
+
+    confidence = probabilities[
+        label
+    ]
+
+    return {
+
+        "label": label,
+
+        "confidence": float(
+            confidence
+        ),
+
+        "probabilities": probabilities
+    }
+
+
+# ============================================================
+# ASPECT SENTIMENT ANALYSIS
+# ============================================================
+
+def calculate_aspect_results(text):
+
+    aspect_clauses = (
+        extract_aspect_sentences(
+            text
+        )
+    )
+
+    results = []
+
+    for aspect, clauses in (
+        aspect_clauses.items()
+    ):
+
+        if not clauses:
+            continue
+
+        aspect_predictions = []
+
+        for clause in clauses:
+
+            local_prediction = (
+                calculate_local_aspect_sentiment(
+                    clause,
+                    aspect
+                )
+            )
+
+            distilbert_prediction = (
+                predict_distilbert(
+                    clause
+                )
+            )
+
+            combined_prediction = (
+                combine_aspect_predictions(
+                    local_prediction,
+                    distilbert_prediction
+                )
+            )
+
+            aspect_predictions.append({
+
+                "prediction":
+                    combined_prediction,
+
+                "sentence":
+                    clause,
+
+                "local_evidence":
+                    local_prediction[
+                        "evidence"
+                    ]
+            })
+
+        if not aspect_predictions:
+            continue
+
+        averaged_probabilities = {
+
+            "NEGATIVE": 0.0,
+
+            "NEUTRAL": 0.0,
+
+            "POSITIVE": 0.0
+        }
+
+        for item in aspect_predictions:
+
+            probabilities = (
+                item["prediction"][
+                    "probabilities"
+                ]
+            )
+
+            for label in averaged_probabilities:
+
+                averaged_probabilities[
+                    label
+                ] += probabilities[
+                    label
+                ]
+
+        number_of_predictions = (
+            len(aspect_predictions)
+        )
+
+        for label in averaged_probabilities:
+
+            averaged_probabilities[
+                label
+            ] /= number_of_predictions
+
+        final_label = max(
+            averaged_probabilities,
+            key=averaged_probabilities.get
+        )
+
+        final_confidence = (
+            averaged_probabilities[
+                final_label
+            ]
+        )
+
+        unique_sentences = []
+
+        for item in aspect_predictions:
+
+            sentence = item[
+                "sentence"
+            ]
+
+            if sentence not in unique_sentences:
+
+                unique_sentences.append(
+                    sentence
+                )
+
+        supporting_text = " ".join(
+            unique_sentences
+        )
+
+        results.append({
+
+            "aspect": aspect,
+
+            "sentiment": final_label,
+
+            "confidence": float(
+                final_confidence
+            ),
+
+            "sentence": supporting_text
+        })
+
+    return results
+
+
+# ============================================================
+# SENTIMENT DISPLAY HELPERS
+# ============================================================
+
+def sentiment_icon(label):
+
+    if label == "POSITIVE":
+        return "😊"
+
+    if label == "NEGATIVE":
+        return "☹️"
+
+    return "😐"
+
+
+def display_label(label):
+
+    return DISPLAY_LABELS.get(
+        label,
+        label.title()
+    )
+
+
+# ============================================================
+# SENTIMENT CIRCLE HELPER
+# ============================================================
+
+def sentiment_circle_html(label):
+
+    if label == "POSITIVE":
+
+        circle_class = "positive-circle"
+
+    elif label == "NEGATIVE":
+
+        circle_class = "negative-circle"
+
+    else:
+
+        circle_class = "neutral-circle"
+
+    return (
+        f'<span class="sentiment-circle '
+        f'{circle_class}"></span>'
+    )
+
+
+# ============================================================
+# KEY INSIGHT
+# ============================================================
+
+def create_key_insight(
+    prediction
+):
+
+    label = prediction[
+        "label"
+    ]
+
+    confidence = prediction[
+        "confidence"
+    ]
+
+    if label == "POSITIVE":
+
+        if confidence >= 0.80:
+
+            return (
+                "The model predicts a positive "
+                "sentiment with high confidence. "
+                "The feedback is generally favorable "
+                "with only minor negative points."
+            )
+
+        return (
+            "The feedback is generally positive, "
+            "although the model has identified "
+            "some uncertainty."
+        )
+
+    if label == "NEGATIVE":
+
+        if confidence >= 0.80:
+
+            return (
+                "The model predicts a negative "
+                "sentiment with high confidence. "
+                "The feedback contains areas that "
+                "may require attention or improvement."
+            )
+
+        return (
+            "The feedback contains negative elements, "
+            "although the overall prediction has "
+            "some uncertainty."
+        )
+
+    return (
+        "The model predicts a neutral sentiment. "
+        "The feedback contains a mixture of "
+        "positive and negative observations."
+    )
+
+
+# ============================================================
+# HEADER
+# ============================================================
+
+def render_header():
+    with st.container(key="main_header"):
+        header_left, header_right = st.columns([4.6, 1.6], gap="large")
+
+        with header_left:
+            icon_col, title_col = st.columns([1.05, 4.0], gap="medium")
+
+            with icon_col:
+                # Original colourful graduation-cap icon.
+                st.markdown(
+                    """
+                    <svg width="104" height="104" viewBox="0 0 64 64"
+                         xmlns="http://www.w3.org/2000/svg"
+                         aria-hidden="true"
+                         style="display:block; margin-top:4px;">
+                        <path fill="#5426A6"
+                              d="M4 24.5 32 10l28 14.5-28 14.5L4 24.5Z"/>
+                        <path fill="#5426A6"
+                              d="M14 31v11.5C14 49.4 22.1 55 32 55s18-5.6 18-12.5V31l-5 2.6v8.9c0 3.8-5.9 7.5-13 7.5s-13-3.7-13-7.5v-8.9L14 31Z"/>
+                        <path fill="#FFFFFF"
+                              d="M19 32.2 32 39l13-6.8v8.7c0 3.8-5.9 7.5-13 7.5s-13-3.7-13-7.5v-8.7Z"/>
+                        <path fill="#5426A6"
+                              d="M56 27v13h-5V29.6L56 27Z"/>
+                        <circle fill="#F6A623" cx="53.5" cy="44.5" r="2.5"/>
+                    </svg>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            with title_col:
+                st.markdown("## Course Feedback<br>Sentiment Analysis", unsafe_allow_html=True)
+                st.markdown(APP_SUBTITLE)
+
+        with header_right:
+            with st.container(border=True, key="header_info"):
+                st.markdown("**AI Education Analytics**")
+                st.markdown("Sentiment&nbsp;&nbsp;&nbsp; Aspects&nbsp;&nbsp;&nbsp; Explainability", unsafe_allow_html=True)
+
+    compact_divider()
+
+
+# ============================================================
+# SIDEBAR
+# ============================================================
+
+def render_sidebar():
+
+    with st.sidebar:
+
+        # Centered blue graduation-cap icon
+        st.markdown(
+            '''
+            <div class="sidebar-brand-icon">
+                <svg viewBox="0 0 64 64" aria-hidden="true">
+                    <path d="M4 24.5 32 10l28 14.5-28 14.5L4 24.5Z"/>
+                    <path d="M14 31v11.5C14 49.4 22.1 55 32 55s18-5.6 18-12.5V31l-5 2.6v8.9c0 3.8-5.9 7.5-13 7.5s-13-3.7-13-7.5v-8.9L14 31Z"/>
+                    <path d="M56 27v13h-5V29.6L56 27Z"/>
+                    <circle cx="53.5" cy="44.5" r="2.5"/>
+                </svg>
+            </div>
+            <div class="sidebar-brand-title">
+                Course Feedback<br>
+                Sentiment Analysis
+            </div>
+            ''',
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            '<div class="sidebar-brand-subtitle">AI-Powered Insights for Better Learning</div>',
+            unsafe_allow_html=True
+        )
+
+        st.caption(
+            CREATED_BY
+        )
+
+        pages = [
+
+            (
+                ":material/chat:",
+                "Single Review Analysis"
+            ),
+
+            (
+                ":material/description:",
+                "CSV Analysis"
+            ),
+
+            (
+                ":material/link:",
+                "Aspect Analysis"
+            ),
+
+            (
+                ":material/lightbulb:",
+                "Explainable AI (SHAP)"
+            ),
+
+            (
+                ":material/info:",
+                "About"
+            )
+        ]
+
+        for icon, page in pages:
+
+            is_active = (
+                st.session_state.active_page
+                == page
+            )
+
+            if st.button(
+
+                page,
+
+                icon=icon,
+
+                key=f"nav_{page}",
+
+                use_container_width=True,
+
+                type=(
+                    "primary"
+                    if is_active
+                    else "secondary"
+                )
+            ):
+
+                st.session_state.active_page = (
+                    page
+                )
+
+                st.rerun()
+
+        compact_divider()
+
+        st.caption(
+            "📈 Turning student feedback "
+            "into actionable insights."
+        )
+
+
+# ============================================================
+# REVIEW INPUT AREA
+# ============================================================
+
+def render_review_input():
+    st.subheader("  Single Review")
+    left, right = st.columns([1.15, 2.0])
+
+    with left:
+        st.caption("Select a sample feedback (optional)")
+        sample = st.selectbox(
+            "Feedback example",
+            ["Choose a feedback..."] + list(SAMPLE_FEEDBACK.keys()),
+            label_visibility="collapsed"
+        )
+        if sample != "Choose a feedback...":
+            st.session_state.review_text = SAMPLE_FEEDBACK[sample]
+
+    with right:
+        st.caption("Type your own review")
+        review = st.text_area(
+            "Course feedback", value=st.session_state.review_text,
+            height=110, max_chars=1000,
+            placeholder="Enter your course feedback here...",
+            label_visibility="collapsed"
+        )
+        st.session_state.review_text = review
+        st.caption(f"{len(review)}/1000")
+
+    compact_divider()
+    model_col, recommendation_col, button_col = st.columns([1.15, 1.35, 1])
+
+    with model_col:
+        selected_model = st.radio(
+            "**Select Model**",
+            ["Logistic Regression", "DistilBERT", "Combined"],
+            index=0
+        )
+
+    with recommendation_col:
+        st.info(
+            "⚡ **Fast deployment default**\n\n"
+            "Logistic Regression loads quickly and is ideal for rapid testing. "
+            "Use multilingual DistilBERT for direct multilingual inference. "
+            "Combined runs both models and takes longer on CPU."
+        )
+
+    with button_col:
+        st.write("")
+        st.write("")
+        analyze = st.button(
+            "Analyze Review", icon=":material/search:",
+            type="primary", use_container_width=True
+        )
+
+    if analyze:
+        if not clean_text(review):
+            st.warning("Please enter a course review first.")
+            return
+
+        with st.spinner("Analyzing review..."):
+            # Logistic/Combined need English for the existing TF-IDF pipeline.
+            # DistilBERT can process multilingual feedback directly.
+            analysis_text, translation = prepare_feedback_for_analysis(
+                review, selected_model
+            )
+            prediction = predict_sentiment(analysis_text, selected_model)
+
+            # Aspect keywords are English-based. Translate only when needed,
+            # and only after the sentiment model has been selected.
+            # Aspect keywords are English-oriented. For multilingual DistilBERT
+            # we keep the analysis fast and avoid silently loading NLLB. The
+            # dedicated Aspect Analysis page can explicitly translate when needed.
+            aspect_text = analysis_text or review
+            aspects = calculate_aspect_results(aspect_text)
+
+        st.session_state.single_result = {
+            "text": review,
+            "analysis_text": analysis_text,
+            "translation": translation,
+            "model": selected_model,
+            "prediction": prediction,
+            "aspects": aspects
+        }
+
+
+# ============================================================
+# SENTIMENT PREDICTION CARD
+# ============================================================
+
+def render_sentiment_card(
+    result
+):
+
+    prediction = result[
+        "prediction"
+    ]
+
+    probabilities = prediction[
+        "probabilities"
+    ]
+
+    label = prediction[
+        "label"
+    ]
+
+    left, right = st.columns(
+        [1.2, 1.5]
+    )
+
+    with left:
+
+        st.markdown(
+            "### Sentiment Prediction"
+        )
+
+        st.markdown(
+            f"## {sentiment_icon(label)}  "
+            f"{display_label(label)}"
+        )
+
+        st.write(
+            "Confidence: "
+            f"**{prediction['confidence']:.2f}**"
+        )
+
+    with right:
+
+        rows = [
+
+            (
+                "Positive",
+                "POSITIVE"
+            ),
+
+            (
+                "Neutral",
+                "NEUTRAL"
+            ),
+
+            (
+                "Negative",
+                "NEGATIVE"
+            )
+        ]
+
+        for name, key in rows:
+
+            bar_col, value_col = (
+                st.columns(
+                    [4, 0.7]
+                )
+            )
+
+            with bar_col:
+
+                st.write(
+                    name
+                )
+
+                st.progress(
+                    probabilities[key]
+                )
+
+            with value_col:
+
+                st.write(
+                    f"{probabilities[key]:.0%}"
+                )
+
+
+# ============================================================
+# ASPECT CARDS
+# ============================================================
+
+def render_aspects(
+    aspects
+):
+
+    st.subheader(
+        "🔗  Aspect Analysis"
+    )
+
+    st.caption(
+        "Key aspects detected in the feedback "
+        "and their sentiment"
+    )
+
+    if not aspects:
+
+        st.info(
+            "No specific course aspects "
+            "were detected."
+        )
+
+        return
+
+    display_aspects = aspects[:8]
+
+    for start in range(
+        0,
+        len(display_aspects),
+        3
+    ):
+
+        row = display_aspects[
+            start:start + 3
+        ]
+
+        columns = st.columns(
+            3
+        )
+
+        for index, item in enumerate(
+            row
+        ):
+
+            with columns[index]:
+
+                with st.container(
+                    border=True
+                ):
+
+                    aspect = item[
+                        "aspect"
+                    ]
+
+                    sentiment = item[
+                        "sentiment"
+                    ]
+
+                    confidence = item[
+                        "confidence"
+                    ]
+
+                    icon = ASPECT_ICONS.get(
+                        aspect,
+                        "🔹"
+                    )
+
+                    st.write(
+                        f"**{icon}  {aspect}**"
+                    )
+
+                    circle = (
+                        sentiment_circle_html(
+                            sentiment
+                        )
+                    )
+
+                    sentiment_text = (
+                        display_label(
+                            sentiment
+                        )
+                    )
+
+                    st.markdown(
+                        f"""
+                        <div class="sentiment-row">
+                            {circle}
+                            <span>{sentiment_text}</span>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    st.progress(
+                        confidence
+                    )
+
+                    st.caption(
+                        f"Confidence: {confidence:.4f}"
+                    )
+
+
+# ============================================================
+# MODEL CONFIDENCE
+# ============================================================
+
+def render_model_confidence(
+    text
+):
+
+    st.subheader(
+        "📊  Model Confidence"
+    )
+
+    logistic = predict_logistic(
+        text
+    )
+
+    distilbert = predict_distilbert(
+        text
+    )
+
+    combined = predict_combined(
+        text
+    )
+
+    col1, col2, col3 = (
+        st.columns(3)
+    )
+
+    with col1:
+
+        st.metric(
+            "Logistic Regression",
+            f"{logistic['confidence']:.2f}"
+        )
+
+    with col2:
+
+        st.metric(
+            "DistilBERT",
+            f"{distilbert['confidence']:.2f}"
+        )
+
+    with col3:
+
+        st.metric(
+            "Combined",
+            f"{combined['confidence']:.2f}",
+            delta="Best"
+        )
+
+
+# ============================================================
+# WORD IMPORTANCE
+# ============================================================
+
+def calculate_word_importance(
+    text
+):
+
+    text = clean_text(
+        text
+    )
+
+    if not text:
+
+        return pd.DataFrame(
+            columns=[
+                "word",
+                "value"
+            ]
+        )
+
+    tfidf_model, tfidf_vectorizer = load_tfidf_models()
+
+    vector = (
+        tfidf_vectorizer
+        .transform(
+            [text]
+        )
+    )
+
+    feature_names = (
+        tfidf_vectorizer
+        .get_feature_names_out()
+    )
+
+    row = vector.toarray()[0]
+
+    classes = [
+
+        normalize_label(
+            value
+        )
+
+        for value in (
+            tfidf_model.classes_
+        )
+    ]
+
+    prediction = predict_logistic(
+        text
+    )
+
+    target_label = prediction[
+        "label"
+    ]
+
+    if target_label in classes:
+
+        target_index = classes.index(
+            target_label
+        )
+
+    else:
+
+        target_index = 0
+
+    coefficient_row = (
+        tfidf_model
+        .coef_[target_index]
+    )
+
+    contributions = (
+        row * coefficient_row
+    )
+
+    nonzero = np.where(
+        row != 0
+    )[0]
+
+    data = []
+
+    for index in nonzero:
+
+        data.append({
+
+            "word": feature_names[index],
+
+            "value": float(
+                contributions[index]
+            )
+        })
+
+    if not data:
+
+        return pd.DataFrame(
+            columns=[
+                "word",
+                "value"
+            ]
+        )
+
+    result = pd.DataFrame(
+        data
+    )
+
+    result["absolute"] = (
+        result["value"]
+        .abs()
+    )
+
+    result = (
+        result
+        .sort_values(
+            "absolute",
+            ascending=False
+        )
+        .head(12)
+        .sort_values(
+            "value"
+        )
+    )
+
+    return result[
+        [
+            "word",
+            "value"
+        ]
+    ]
+
+
+# ============================================================
+# CREATE EXPLAINABLE AI GRAPH
+# ============================================================
+
+def create_explanation_figure(
+    text
+):
+
+    data = calculate_word_importance(
+        text
+    )
+
+    if data.empty:
+
         return None
 
-    top = contrib_df.head(7).sort_values("Contribution")
+    fig, ax = plt.subplots(
+        figsize=(
+            7,
+            4.2
+        )
+    )
 
-    fig, ax = plt.subplots(figsize=(9, max(3, 0.6 * len(top) + 1.2)))
-    ax.barh(top["Word"], top["Contribution"], color="#2A7AB8")
-    ax.grid(axis="x", color="#E5E7EB", linewidth=0.8)
-    ax.set_axisbelow(True)
-    ax.set_title("Top Contributing Words")
-    ax.set_xlabel("SHAP Value")
-    fig.tight_layout()
-    import base64
-    png = fig_to_png_bytes(fig).getvalue()
-    st.markdown(
-        f'<div style="background:#FFFFFF;border-radius:6px;padding:0.4rem 0.6rem;">'
-        f'<img src="data:image/png;base64,{base64.b64encode(png).decode()}" style="width:100%;display:block;"></div>',
-        unsafe_allow_html=True)
+    ax.barh(
+        data["word"],
+        data["value"]
+    )
+
+    ax.axvline(
+        0,
+        linewidth=1
+    )
+
+    ax.set_xlabel(
+        "SHAP Value"
+    )
+
+    ax.set_title(
+        "Top Contributing Words"
+    )
+
+    ax.grid(
+        axis="x",
+        alpha=0.2
+    )
+
+    plt.tight_layout()
 
     return fig
 
 
-# =============================================================
-# ONE-TIME TOAST
-# =============================================================
-st.toast("Turning student feedback into actionable insights", icon="🎓")
+# ============================================================
+# EXPLAINABLE AI CHART
+# ============================================================
 
-# =============================================================
-# SIDEBAR NAVIGATION
-# =============================================================
-NAV_ITEMS = [
-    ("Single Review Analysis", ":material/chat:"),
-    ("CSV Analysis", ":material/description:"),
-    ("Aspect Analysis", ":material/link:"),
-    ("Explainable AI (SHAP)", ":material/lightbulb:"),
-    ("About", ":material/info:"),
-]
+def render_explanation_chart(
+    text
+):
 
-if "nav" not in st.session_state:
-    st.session_state.nav = "Single Review Analysis"
+    fig = create_explanation_figure(
+        text
+    )
 
-with st.sidebar:
-    GRAD_CAP_SVG = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="80 90 530 425">'
-                     '<path d="M207,290V395C207,455 270,480 350,480C430,480 495,452 495,395V290" fill="none" stroke="#3B82F6" stroke-width="50"/>'
-                     '<path d="M340,100L592,232L340,358L95,232Z" fill="#3B82F6"/>'
-                     '<rect x="528" y="258" width="40" height="140" fill="#60A5FA"/>'
-                     '<circle cx="548" cy="418" r="27" fill="#93C5FD"/></svg>')
-    st.markdown(f'<div class="sidebar-logo">{GRAD_CAP_SVG}</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-title">Course Feedback<br>Sentiment Analysis</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-sub">AI-Powered Insights for Better Learning</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-author">Created By Afsah Arshad</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+    if fig is None:
 
-    for name, icon in NAV_ITEMS:
-        is_active = st.session_state.nav == name
-        if st.button(name, key=f"nav_{name}", use_container_width=True, icon=icon,
-                     type="primary" if is_active else "secondary"):
-            st.session_state.nav = name
-            st.rerun()
-
-# Left-align original (possibly RTL-script) feedback text wherever it's shown,
-# so Urdu/Arabic text doesn't auto-flip to right-aligned next to its translation.
-st.markdown("""
-<style>
-[data-testid="stDataFrame"] div[role="gridcell"] { direction: ltr !important; text-align: left !important; unicode-bidi: plaintext !important; }
-</style>
-""", unsafe_allow_html=True)
-
-app_mode = st.session_state.nav
-
-# =============================================================
-# SAMPLE FEEDBACKS & MODEL DESCRIPTIONS (Single Review)
-# =============================================================
-SAMPLE_CSV_DATASETS = {
-    "-- None (upload your own) --": None,
-    "Course Feedback by Course Name (30 rows)": "sample_course_feedbacks_by_course_name.csv",
-    "Course Feedback with Details (30 rows)": "sample_course_feedbacks_with_details.csv",
-    "Multilingual Course Feedback Test (45 rows)": "sample_multilingual_course_feedback_test.csv",
-    "Course Feedback with Sentiment Labels (60 rows)": "sample_book1.csv",
-    "Simple Course Feedbacks (30 rows)": "sample_course_feedbacks.csv",
-    "Simple Test Reviews (30 rows)": "sample_test.csv",
-    "Full Original Dataset (123,240 rows)": "sample_full_dataset.csv",
-}
-
-SAMPLE_FEEDBACKS = {
-    "Choose a feedback...": "",
-    "Excellent course": "This course is excellent and very easy to follow. I learned a lot.",
-    "Very helpful": "The explanations are clear and the practice was very useful.",
-    "Good but difficult": "The instructor was good and the content was useful, but some assignments were difficult.",
-    "Average experience": "The course was okay. Some topics were useful, but the overall experience was average.",
-    "Poor experience": "The lessons were confusing and the exercises were too hard.",
-    "Excellent instructor": "The instructor explained everything clearly and the lectures were engaging.",
-    "Difficult assignments": "The assignments were too difficult and took much longer than expected.",
-    "Mixed feelings": "The course content was great, but the platform kept crashing and the certificate never arrived.",
-    "Very negative experience": "This was a waste of time and money. The instructor was unclear and the assignments made no sense.",
-    "Platform issues": "The video kept buffering and the platform navigation was confusing, but the material itself was solid.",
-    "Great value for money": "For the price, this course offers excellent value — the content is worth far more than what I paid.",
-    "Outdated content": "The material feels outdated and doesn't reflect current industry practices, though the instructor was engaging.",
-    "Multilingual (Urdu)": "کورس بہت اچھا تھا لیکن اسائنمنٹس تھوڑے مشکل تھے۔",
-    "Multilingual (Chinese)": "这门课程非常棒，内容清晰，而且我学到了很多东西。",
-}
-
-MODEL_DESCRIPTIONS = {
-    "Logistic Regression": ("Logistic Regression",
-        "Fast, lightweight linear model trained on TF-IDF features. Ideal for quick testing."),
-    "DistilBERT": ("DistilBERT",
-        "Fine-tuned multilingual transformer (Afsah-2027/coursera-multilingual-distilbert), loaded from Hugging Face Hub. First use in a session downloads ~541 MB, so it may take a moment; if it can't load, results fall back to Logistic Regression."),
-    "Combined": ("Combined (Recommended)",
-        "Uses both Logistic Regression and multilingual DistilBERT. Averages the probability outputs of the two trained classifiers and is recommended for the final presentation."),
-}
-
-def _apply_sample_feedback():
-    choice = st.session_state.get("sample_choice")
-    if choice and SAMPLE_FEEDBACKS.get(choice):
-        st.session_state["single_review_text"] = SAMPLE_FEEDBACKS[choice]
-
-def _apply_sample_feedback_to(choice_key, text_key):
-    def _cb():
-        choice = st.session_state.get(choice_key)
-        if choice and SAMPLE_FEEDBACKS.get(choice):
-            st.session_state[text_key] = SAMPLE_FEEDBACKS[choice]
-    return _cb
-
-# =============================================================
-# VIEW: SINGLE REVIEW ANALYSIS
-# =============================================================
-if app_mode == "Single Review Analysis":
-    render_hero()
-    st.markdown(f'<p class="section-header">{hicon("chat")} Single Review Analysis</p>', unsafe_allow_html=True)
-    st.caption("Analyze one course review using the trained AI models.")
-
-    st.markdown(f'<p class="section-header" style="font-size:1.3rem !important;">Single Review</p>', unsafe_allow_html=True)
-
-    sample_col, text_col = st.columns(2)
-    with sample_col:
-        st.selectbox("Select a sample feedback (optional)", list(SAMPLE_FEEDBACKS.keys()),
-                     key="sample_choice", on_change=_apply_sample_feedback)
-    with text_col:
-        user_review = st.text_area("Type your own review", max_chars=1000,
-                                    key="single_review_text", placeholder="Type or paste feedback here...",
-                                    value=st.session_state.get("single_review_text",
-                                          "The instructor was good and the content was useful, but some assignments were difficult."))
-        st.caption(f"{len(user_review)}/1000")
-
-    st.markdown("")
-    st.markdown("**Select Model**")
-    radio_col, desc_col, btn_col = st.columns([1, 2, 1])
-    with radio_col:
-        selected_model = st.radio(
-            "Model Selection", ["Logistic Regression", "DistilBERT", "Combined"],
-            label_visibility="collapsed", key="single_model_choice", index=2
+        st.info(
+            "No TF-IDF words were available "
+            "for a word-level explanation."
         )
-    with desc_col:
-        title, body = MODEL_DESCRIPTIONS[selected_model]
-        st.markdown(
-            f'<div class="model-desc-box">'
-            f'<div class="model-desc-title">🔵 {title}</div>'
-            f'<div class="model-desc-body">{body}</div>'
-            f'</div>', unsafe_allow_html=True)
-    with btn_col:
-        st.markdown('<div style="height:0.4rem"></div>', unsafe_allow_html=True)
-        analyze_clicked = st.button("Analyze Review", type="primary", use_container_width=True, icon=":material/search:")
 
-    if analyze_clicked:
-        if user_review.strip() == "":
-            st.warning("Please enter some review text first.")
-        else:
-            with st.spinner("Analyzing sentiment..."):
-                lang_code, lang_name = detect_language(user_review)
-                translated = translate_to_english(user_review, lang_code)
-                probs = get_full_probs(translated, engine=selected_model)
-                sentiment = max(probs, key=probs.get)
-                conf = probs[sentiment]
+        return
 
-                if lang_code != "en":
-                    with st.container(border=True):
-                        st.markdown("#### 🌐 English Translation")
-                        st.markdown(f"Detected language: **{lang_name}**")
-                        st.markdown("**Original Feedback**")
-                        st.markdown(f'<div class="orig-text-left">{html_lib.escape(user_review)}</div>',
-                                    unsafe_allow_html=True)
-                        st.markdown("**English Translation**")
-                        st.write(translated)
-                    st.markdown("")
+    st.pyplot(
+        fig,
+        use_container_width=True
+    )
 
-                st.markdown("---")
-                st.markdown(f'<p class="result-header">{hicon("clipboard")} Single Review Analysis</p>', unsafe_allow_html=True)
+    plt.close(fig)
 
-                with st.container(border=True):
-                    left, right = st.columns([1, 1])
-                    with left:
-                        st.markdown("### Sentiment Prediction")
-                        st.markdown(f"## {SENT_EMOJI[sentiment]} {sentiment.capitalize()}")
-                        st.markdown(f"Confidence: **{conf:.2f}**")
-                    with right:
-                        for cls in SENT_ORDER:
-                            p = probs[cls]
-                            st.markdown(f'<div style="display:flex;justify-content:space-between;padding-right:1.2rem;"><span>{cls.capitalize()}</span><span>{p*100:.0f}%</span></div>', unsafe_allow_html=True)
-                            st.progress(float(p))
 
-                st.markdown("")
-                with st.container(border=True):
-                    st.markdown('<p class="result-header" style="margin-top:0.2rem !important;">💡 Key Insight</p>', unsafe_allow_html=True)
-                    st.write(generate_key_insight(sentiment, probs))
+# ============================================================
+# CREATE EXPLAINABLE AI PNG
+# ============================================================
 
-                st.markdown("---")
-                with st.container(border=True):
-                    st.markdown(f'<p class="result-header" style="margin-top:0.2rem !important;">{hicon("link")} Aspect Analysis</p>', unsafe_allow_html=True)
-                    st.caption("Key aspects detected in the feedback and their sentiment")
-                    mentions = extract_aspect_mentions(translated)
-                    render_aspect_cards(mentions, engine=selected_model)
+def create_explanation_png(
+    text
+):
 
-                st.markdown("---")
-                with st.container(border=True):
-                    shap_fig = render_explainable_section(translated, sentiment)
+    fig = create_explanation_figure(
+        text
+    )
 
-                lr_conf, distil_conf, combined_conf, distil_available = get_engine_confidences(translated)
-                report_txt = (
-                    f"Review: {user_review}\n\nLanguage: {lang_name}\nTranslation: {translated}\n\n"
-                    f"Sentiment: {sentiment} (confidence {conf:.2f})\n\n"
-                    f"Model Confidence -> Logistic Regression: {lr_conf:.2f}, DistilBERT: {distil_conf:.2f}, Combined: {combined_conf:.2f}\n"
-                )
-                result_df = pd.DataFrame([{"Review": user_review, "Sentiment": sentiment, "Confidence": round(conf, 4)}])
+    if fig is None:
 
-                mc_col, qa_col = st.columns(2)
-                with mc_col:
-                    with st.container(border=True):
-                        st.markdown("### 📊 Model Confidence")
-                        c1, c2, c3 = st.columns(3)
-                        with c1:
-                            st.markdown("**Logistic Regression**")
-                            st.markdown(f"## {lr_conf:.2f}")
-                            if selected_model == "Logistic Regression":
-                                st.success("↑ Best")
-                        with c2:
-                            st.markdown("**DistilBERT**")
-                            st.markdown(f"## {distil_conf:.2f}")
-                            if selected_model == "DistilBERT":
-                                st.success("↑ Best")
-                        with c3:
-                            st.markdown("**Combined**")
-                            st.markdown(f"## {combined_conf:.2f}")
-                            if selected_model == "Combined":
-                                st.success("↑ Best")
-                with qa_col:
-                    with st.container(border=True):
-                        st.markdown("### ⚡ Quick Actions")
+        return None
 
-                        def _action_btn(kind, label, icon, *args, **kw):
-                            fn = st.download_button if kind == "dl" else st.button
-                            try:
-                                return fn(label, *args, type="primary", use_container_width=True, icon=icon, **kw)
-                            except TypeError:  # older Streamlit without icon= on this widget
-                                return fn(label, *args, type="primary", use_container_width=True, **kw)
+    image_buffer = BytesIO()
 
-                        _action_btn("dl", "Download Detailed Report", ":material/description:",
-                                    report_txt.encode("utf-8"), "detailed_report.txt", "text/plain")
-                        _action_btn("dl", "Download Results", ":material/download:",
-                                    df_to_csv_bytes(result_df), "single_review_result.csv", "text/csv")
-                        if shap_fig is not None:
-                            _action_btn("dl", "Download Explainable AI Graph", ":material/bar_chart:",
-                                        fig_to_png_bytes(shap_fig), "explainable_ai_graph.png", "image/png")
-                        else:
-                            _action_btn("btn", "Download Explainable AI Graph", ":material/bar_chart:", disabled=True)
+    fig.savefig(
+        image_buffer,
+        format="png",
+        dpi=200,
+        bbox_inches="tight"
+    )
 
-                st.info("ℹ️ SHAP shows which words and tokens contributed to the model's prediction, helping you understand the reasoning behind each sentiment.")
+    plt.close(fig)
 
-    render_footer()
+    image_buffer.seek(
+        0
+    )
 
-# =============================================================
-# VIEW: CSV ANALYSIS
-# =============================================================
-elif app_mode == "CSV Analysis":
-    render_hero()
-    st.markdown('<p class="main-header">Batch CSV Sentiment Analysis</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Upload a CSV file containing course reviews to analyze trends in bulk.</p>', unsafe_allow_html=True)
+    return image_buffer.getvalue()
 
-    sample_col, upload_col = st.columns(2)
-    with sample_col:
-        sample_choice = st.selectbox("Load a sample dataset (optional)", list(SAMPLE_CSV_DATASETS.keys()), key="csv_sample_choice")
-    with upload_col:
-        uploaded_file = st.file_uploader("Or upload your own CSV file", type=["csv"])
-    st.info("💡 Your CSV can contain additional columns such as CourseId, rating, date, or other metadata.")
 
-    df = None
-    sample_file = SAMPLE_CSV_DATASETS.get(sample_choice)
-    if sample_file:
-        try:
-            df = pd.read_csv(sample_file)
-            st.caption(f"📂 Loaded bundled sample: **{sample_choice}**")
-        except Exception as e:
-            st.error(f"Couldn't load the sample dataset: {e}")
-    elif uploaded_file is not None:
-        try:
-            df = pd.read_csv(uploaded_file)
-        except Exception as e:
-            st.error(f"Couldn't read this CSV: {e}")
+# ============================================================
+# REVIEW REPORT
+# ============================================================
 
-    if True:
-        if df is not None and not df.empty:
-            if len(df) > 5000:
-                st.caption("⚡ This is a large dataset — Logistic Regression will run fastest. DistilBERT/Combined may take a while.")
-            review_col = detect_review_column(df)
-            course_col = detect_course_column(df, review_col)
+def create_review_report(
+    result
+):
 
-            st.success(f"Detected review column: **{review_col}**")
+    prediction = result[
+        "prediction"
+    ]
 
-            m1, m2, m3 = st.columns(3)
-            m1.metric("Rows", len(df))
-            m2.metric("Columns", len(df.columns))
-            m3.metric("Review Column", review_col)
+    lines = [
 
-            st.markdown("### Select Model for Analysis")
-            selected_model = st.radio(
-                "Model", ["Logistic Regression", "DistilBERT", "Combined"],
-                horizontal=True, label_visibility="collapsed", key="csv_model", index=2
+        "COURSE FEEDBACK SENTIMENT ANALYSIS",
+
+        "Created By Afsah Arshad",
+
+        "=" * 50,
+
+        f"Model: {result['model']}",
+
+        f"Sentiment: {prediction['label']}",
+
+        (
+            f"Confidence: "
+            f"{prediction['confidence']:.4f}"
+        ),
+
+        "",
+
+        "REVIEW",
+
+        result["text"],
+
+        "",
+
+        "LANGUAGE",
+
+        result.get(
+            "translation",
+            {}
+        ).get(
+            "language_name",
+            "English"
+        ),
+
+        "",
+
+        "ENGLISH TEXT USED FOR ANALYSIS",
+
+        result.get(
+            "analysis_text",
+            result["text"]
+        ),
+
+        "",
+
+        "ASPECTS"
+    ]
+
+    for item in result[
+        "aspects"
+    ]:
+
+        lines.append(
+
+            f"- {item['aspect']}: "
+            f"{item['sentiment']} "
+            f"({item['confidence']:.2f})"
+        )
+
+    return "\n".join(
+        lines
+    )
+
+
+# ============================================================
+# REVIEW CSV
+# ============================================================
+
+def create_result_csv(
+    result
+):
+
+    prediction = result[
+        "prediction"
+    ]
+
+    dataframe = pd.DataFrame([{
+
+        "Review":
+            result["text"],
+
+        "Language":
+            result.get(
+                "translation",
+                {}
+            ).get(
+                "language_name",
+                "English"
+            ),
+
+        "English Translation":
+            result.get(
+                "analysis_text",
+                result["text"]
+            ),
+
+        "Model":
+            result["model"],
+
+        "Sentiment":
+            prediction["label"],
+
+        "Confidence":
+            prediction["confidence"],
+
+        "Negative Probability":
+            prediction[
+                "probabilities"
+            ]["NEGATIVE"],
+
+        "Neutral Probability":
+            prediction[
+                "probabilities"
+            ]["NEUTRAL"],
+
+        "Positive Probability":
+            prediction[
+                "probabilities"
+            ]["POSITIVE"]
+    }])
+
+    return dataframe.to_csv(
+        index=False
+    ).encode(
+        "utf-8"
+    )
+
+
+# ============================================================
+# SINGLE REVIEW PAGE
+# ============================================================
+
+def render_single_review():
+
+    st.title(
+        "💬 Single Review Analysis"
+    )
+
+    st.caption(
+        "Analyze one course review using "
+        "the trained AI models."
+    )
+
+    render_review_input()
+
+    result = (
+        st.session_state.single_result
+    )
+
+    if result is None:
+
+        st.info(
+            "Enter a review and select "
+            "**Analyze Review** to see the analysis."
+        )
+
+        return
+
+    compact_divider()
+
+    st.subheader(
+        "📋  Single Review Analysis"
+    )
+
+    translation = result.get(
+        "translation"
+    )
+
+    if translation and translation.get(
+        "was_translated"
+    ):
+
+        with st.container(
+            border=True
+        ):
+
+            st.subheader(
+                "🌐  English Translation"
             )
 
-            if st.button("🔍 Analyze CSV", type="primary", use_container_width=True):
-                with st.spinner("Analyzing reviews..."):
-                    work_df = df.copy()
-                    texts = work_df[review_col].astype(str).tolist()
+            st.caption(
+                "Detected language: "
+                f"**{translation['language_name']}**"
+            )
 
-                    preds, confs = batch_predict(texts, engine=selected_model)
-                    work_df["Sentiment"] = preds
-                    work_df["Confidence"] = np.round(confs, 4)
+            st.markdown(
+                "**Original Feedback**"
+            )
 
-                    st.session_state["csv_result"] = {
-                        "df": work_df,
-                        "review_col": review_col,
-                        "course_col": course_col,
-                    }
-                st.success(f"Analysis completed for {len(work_df)} reviews.")
+            st.write(
+                result["text"]
+            )
 
-    result = st.session_state.get("csv_result")
-    if result is not None:
-        work_df = result["df"]
-        review_col = result["review_col"]
-        course_col = result["course_col"]
+            st.markdown(
+                "**English Translation**"
+            )
 
-        st.markdown(f'<p class="section-header">{hicon("chart")} Overall Sentiment Analysis</p>', unsafe_allow_html=True)
-        counts = work_df["Sentiment"].value_counts().reindex(SENT_ORDER, fill_value=0)
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Positive", int(counts["POSITIVE"]))
-        c2.metric("Neutral", int(counts["NEUTRAL"]))
-        c3.metric("Negative", int(counts["NEGATIVE"]))
+            st.write(
+                translation["translated"]
+            )
 
-        fig1, ax1 = plt.subplots(figsize=(8, 4))
-        ax1.bar(["Positive", "Neutral", "Negative"], counts.values,
-                color=[SENT_COLORS[s] for s in SENT_ORDER])
-        ax1.set_title("Overall Sentiment Distribution")
-        ax1.set_ylabel("Count")
-        st.pyplot(fig1)
+        compact_divider()
 
-        st.markdown(f'<p class="section-header">{hicon("link")} Aspect-Based Sentiment Analysis</p>', unsafe_allow_html=True)
-        st.caption("Shows which course-related aspects are discussed in the feedback and whether students feel positively, neutrally, or negatively about them.")
+    # --------------------------------------------------------
+    # SENTIMENT PREDICTION
+    # --------------------------------------------------------
 
-        @st.cache_data(show_spinner=False)
-        def build_aspect_table(texts, courses):
-            rows = []
-            for i, text in enumerate(texts):
-                lang_code, _ = detect_language(text)
-                translated_text = cached_translate(text, lang_code)
-                mentions = extract_aspect_mentions(translated_text)
-                for aspect, sentence in mentions.items():
-                    rows.append({
-                        "RowIndex": i,
-                        "Course": courses[i] if courses is not None else "N/A",
-                        "Aspect": aspect,
-                        "Review": sentence,
-                        "FullReview": text,
-                    })
-            adf = pd.DataFrame(rows)
-            if not adf.empty:
-                preds, confs = batch_predict(adf["Review"].tolist(), engine="Logistic Regression")
-                adf["Sentiment"] = preds
-                adf["Confidence"] = np.round(confs, 4)
-            return adf
+    with st.container(
+        border=True
+    ):
 
-        courses_list = work_df[course_col].astype(str).tolist() if course_col else None
-        texts_ = work_df[review_col].astype(str).tolist()
+        render_sentiment_card(
+            result
+        )
 
-        ASPECT_ANALYSIS_ROW_CAP = 5000
-        if len(texts_) > ASPECT_ANALYSIS_ROW_CAP:
-            st.caption(f"⚡ Aspect analysis is computed on the first {ASPECT_ANALYSIS_ROW_CAP:,} of {len(texts_):,} rows to keep things fast. Overall sentiment above still covers all rows.")
-            texts_for_aspects = texts_[:ASPECT_ANALYSIS_ROW_CAP]
-            courses_for_aspects = courses_list[:ASPECT_ANALYSIS_ROW_CAP] if courses_list else None
-        else:
-            texts_for_aspects = texts_
-            courses_for_aspects = courses_list
+    st.write("")
 
-        aspect_df = build_aspect_table(tuple(texts_for_aspects), tuple(courses_for_aspects) if courses_for_aspects else None)
+    # --------------------------------------------------------
+    # KEY INSIGHT - FULL WIDTH
+    # --------------------------------------------------------
 
-        if aspect_df.empty:
-            st.warning("No course-related aspects were detected in this dataset.")
-        else:
-            overall_pivot = aspect_df.groupby(["Aspect", "Sentiment"]).size().unstack(fill_value=0)
-            for s in SENT_ORDER:
-                if s not in overall_pivot.columns:
-                    overall_pivot[s] = 0
-            overall_pivot = overall_pivot.reindex(ASPECT_NAMES).fillna(0).astype(int)
-            overall_pivot = overall_pivot[SENT_ORDER]
+    with st.container(
+        border=True
+    ):
 
-            overall_summary = overall_pivot.copy()
-            overall_summary["Reviews"] = overall_summary.sum(axis=1)
-            overall_summary["Overall Sentiment"] = overall_summary.apply(
-                lambda r: majority_sentiment(r["POSITIVE"], r["NEUTRAL"], r["NEGATIVE"]), axis=1)
-            overall_summary = overall_summary.reset_index().rename(
-                columns={"POSITIVE": "Positive", "NEUTRAL": "Neutral", "NEGATIVE": "Negative"})
-            overall_summary = overall_summary[overall_summary["Reviews"] > 0]
-            overall_summary = overall_summary[["Aspect", "Reviews", "Positive", "Neutral", "Negative", "Overall Sentiment"]]
+        st.subheader(
+            "💡  Key Insight"
+        )
 
-            st.dataframe(overall_summary, use_container_width=True, hide_index=True)
+        insight = create_key_insight(
+            result["prediction"]
+        )
 
-            plot_pivot = overall_pivot.loc[overall_summary["Aspect"]]
-            x = np.arange(len(plot_pivot))
-            width = 0.25
-            fig2, ax2 = plt.subplots(figsize=(11, 5))
-            ax2.bar(x - width, plot_pivot["POSITIVE"], width, label="Positive", color=SENT_COLORS["POSITIVE"])
-            ax2.bar(x, plot_pivot["NEUTRAL"], width, label="Neutral", color=SENT_COLORS["NEUTRAL"])
-            ax2.bar(x + width, plot_pivot["NEGATIVE"], width, label="Negative", color=SENT_COLORS["NEGATIVE"])
-            ax2.set_xticks(x)
-            ax2.set_xticklabels(plot_pivot.index, rotation=45, ha="right")
-            ax2.set_xlabel("Aspect")
-            ax2.set_ylabel("Count")
-            ax2.set_title("Aspect Sentiment Analysis")
-            ax2.legend(title="Sentiment")
-            fig2.tight_layout()
-            st.pyplot(fig2)
+        st.markdown(
+            f'<div class="key-insight-text">{insight}</div>',
+            unsafe_allow_html=True
+        )
 
-            dl1, dl2 = st.columns(2)
-            with dl1:
-                st.download_button("⬇️ Download Overall Aspect Analysis", df_to_csv_bytes(overall_summary),
-                                    "overall_aspect_analysis.csv", "text/csv", use_container_width=True)
-            with dl2:
-                st.download_button("🖼️ Download Aspect Graph", fig_to_png_bytes(fig2),
-                                    "aspect_graph.png", "image/png", use_container_width=True)
+    compact_divider()
 
-            st.markdown(f'<p class="section-header">{hicon("cap")} Course-Wise Aspect Analysis</p>', unsafe_allow_html=True)
-            st.caption("Aspect sentiment is grouped using the Course Name or Course ID available in the uploaded CSV.")
+    # --------------------------------------------------------
+    # ASPECT ANALYSIS
+    # MAXIMUM 3 CARDS PER ROW
+    # --------------------------------------------------------
 
-            if not course_col:
-                st.info("No course/course-ID column was detected in this CSV, so course-wise breakdown isn't available. Add a column like `Course`, `CourseId` or `Course Name` to enable it.")
-            else:
-                course_pivot = aspect_df.groupby(["Course", "Aspect", "Sentiment"]).size().unstack(fill_value=0)
-                for s in SENT_ORDER:
-                    if s not in course_pivot.columns:
-                        course_pivot[s] = 0
-                course_pivot = course_pivot[SENT_ORDER].reset_index()
-                course_pivot["Reviews"] = course_pivot[SENT_ORDER].sum(axis=1)
-                course_pivot["Overall Sentiment"] = course_pivot.apply(
-                    lambda r: majority_sentiment(r["POSITIVE"], r["NEUTRAL"], r["NEGATIVE"]), axis=1)
-                course_summary = course_pivot.rename(
-                    columns={"POSITIVE": "Positive", "NEUTRAL": "Neutral", "NEGATIVE": "Negative"})
-                course_summary = course_summary[["Course", "Aspect", "Reviews", "Positive", "Neutral", "Negative", "Overall Sentiment"]]
+    with st.container(
+        border=True
+    ):
 
-                st.download_button("⬇️ Download All Course-Wise Aspect Analysis", df_to_csv_bytes(course_summary),
-                                    "course_wise_aspect_analysis.csv", "text/csv", use_container_width=True)
+        render_aspects(
+            result["aspects"]
+        )
 
-                course_options = sorted(course_summary["Course"].unique().tolist())
-                selected_course = st.selectbox("Select Course", course_options)
+    compact_divider()
 
-                course_view = course_summary[course_summary["Course"] == selected_course]
-                st.dataframe(course_view, use_container_width=True, hide_index=True)
+    # --------------------------------------------------------
+    # EXPLAINABLE AI - NEXT ROW
+    # --------------------------------------------------------
 
-                fig3, ax3 = plt.subplots(figsize=(10, 4.5))
-                bar_colors = [SENT_COLORS[s] for s in course_view["Overall Sentiment"]]
-                ax3.bar(course_view["Aspect"], course_view["Reviews"], color=bar_colors)
-                ax3.set_title(f"Aspect Sentiment for {selected_course}")
-                ax3.set_xlabel("Aspect")
-                ax3.set_ylabel("Count")
-                plt.setp(ax3.get_xticklabels(), rotation=45, ha="right")
-                fig3.tight_layout()
-                st.pyplot(fig3)
+    with st.container(
+        border=True
+    ):
 
-                dl3, dl4 = st.columns(2)
-                with dl3:
-                    st.download_button("⬇️ Download Selected Course Analysis", df_to_csv_bytes(course_view),
-                                        f"{selected_course}_aspect_analysis.csv", "text/csv", use_container_width=True)
-                with dl4:
-                    st.download_button("🖼️ Download Course Graph", fig_to_png_bytes(fig3),
-                                        f"{selected_course}_aspect_graph.png", "image/png", use_container_width=True)
+        st.subheader(
+            "💡  Explainable AI (SHAP)"
+        )
 
-            st.markdown(f'<p class="section-header">{hicon("clipboard")} Detailed Aspect Results</p>', unsafe_allow_html=True)
-            detailed = aspect_df[["Course", "Aspect", "Sentiment", "Confidence", "Review"]] if course_col else aspect_df[["Aspect", "Sentiment", "Confidence", "Review"]]
-            st.dataframe(detailed, use_container_width=True, hide_index=True)
-            st.download_button("⬇️ Download Detailed Aspect Results", df_to_csv_bytes(detailed),
-                                "detailed_aspect_results.csv", "text/csv", use_container_width=True)
+        st.caption(
+            "Generate the word-level explanation only when needed."
+        )
 
-        st.markdown(f'<p class="section-header">{hicon("clipboard")} Analysis Results</p>', unsafe_allow_html=True)
-        TRANSLATE_LIMIT = 200
-        preview_df = work_df.head(TRANSLATE_LIMIT).copy()
+        if st.button(
+            "Generate Explanation",
+            icon=":material/psychology:",
+            key="single_generate_explanation",
+            use_container_width=True
+        ):
+            with st.spinner("Generating explanation..."):
+                render_explanation_chart(
+                    result.get("analysis_text", result["text"])
+                )
 
-        lang_labels, translations = [], []
-        for text in preview_df[review_col].astype(str).tolist():
-            code, name = detect_language(text)
-            lang_labels.append(name)
-            translations.append(translate_to_english(text, code))
+    compact_divider()
 
-        preview_df["Language"] = lang_labels
-        preview_df["English Translation"] = translations
+    # --------------------------------------------------------
+    # MODEL CONFIDENCE + QUICK ACTIONS
+    # --------------------------------------------------------
 
-        display_cols = ([course_col] if course_col else []) + [review_col, "Language", "English Translation", "Sentiment", "Confidence"]
-        st.dataframe(preview_df[display_cols], use_container_width=True, hide_index=True)
-        if len(work_df) > TRANSLATE_LIMIT:
-            st.caption(f"Showing translations for the first {TRANSLATE_LIMIT} of {len(work_df)} rows to keep things fast. Full sentiment results for all rows are in the download below.")
-
-        full_export_cols = ([course_col] if course_col else []) + [review_col, "Sentiment", "Confidence"]
-        st.download_button("⬇️ Download Results", df_to_csv_bytes(work_df[full_export_cols]),
-                            "analysis_results.csv", "text/csv", use_container_width=True)
-
-    render_footer()
-
-# =============================================================
-# VIEW: ASPECT ANALYSIS (single review, standalone)
-# =============================================================
-elif app_mode == "Aspect Analysis":
-    render_hero()
-    st.markdown(f'<p class="main-header">{hicon("link")} Aspect Analysis</p>', unsafe_allow_html=True)
-    st.caption("Identify important course-related aspects and their sentiment.")
-
-    sample_col2, text_col2 = st.columns(2)
-    with sample_col2:
-        st.selectbox("Select a sample feedback (optional)", list(SAMPLE_FEEDBACKS.keys()),
-                     key="aspect_sample_choice", on_change=_apply_sample_feedback_to("aspect_sample_choice", "aspect_text"))
-    with text_col2:
-        text = st.text_area("Enter course feedback", key="aspect_text",
-                             placeholder="Example: The instructor was excellent, but the assignments were difficult.")
-    st.markdown("**Select Model**")
-    aspect_engine = st.radio(
-        "Model", ["Logistic Regression", "DistilBERT", "Combined"],
-        horizontal=True, label_visibility="collapsed", key="aspect_model_choice", index=2,
-        help="Uses the same 3 models as Single Review Analysis. Kept as Combined by default so results here match Single Review's default for the same text."
+    confidence_col, actions_col = (
+        st.columns(
+            [1.55, 1]
+        )
     )
-    if st.button("🔎 Analyze Aspects", type="primary"):
-        if not text.strip():
-            st.warning("Please enter some review text first.")
-        else:
-            lang_code, lang_name = detect_language(text)
-            translated = translate_to_english(text, lang_code)
-            mentions = extract_aspect_mentions(translated)
-            if mentions:
-                st.success(f"Detected {len(mentions)} aspect(s) in this review.")
-            render_aspect_cards(mentions, engine=aspect_engine)
 
-    render_footer()
+    with confidence_col:
 
-# =============================================================
-# VIEW: EXPLAINABLE AI (SHAP-style feature contributions)
-# =============================================================
-elif app_mode == "Explainable AI (SHAP)":
-    render_hero()
-    st.markdown(f'<p class="main-header">{hicon("bulb")} Explainable AI (SHAP)</p>', unsafe_allow_html=True)
-    st.caption("Understand which words influence the sentiment prediction (based on the Logistic Regression model's TF-IDF weights).")
+        with st.container(
+            border=True
+        ):
 
-    sample_col3, text_col3 = st.columns(2)
-    with sample_col3:
-        st.selectbox("Select a sample feedback (optional)", list(SAMPLE_FEEDBACKS.keys()),
-                     key="shap_sample_choice", on_change=_apply_sample_feedback_to("shap_sample_choice", "shap_text"))
-    with text_col3:
-        text = st.text_area("Enter course feedback", key="shap_text",
-                             placeholder="Enter a review to generate word-level explanations.")
-    if st.button("🎨 Generate Explanation", type="primary"):
-        if not text.strip():
-            st.warning("Please enter some review text first.")
-        elif not MODEL_READY:
-            st.error("The sentiment model isn't loaded, so an explanation can't be generated right now.")
-        else:
-            pred_label, conf = predict_sentiment(text, model_type="Logistic Regression")
-            st.markdown(f"### Predicted Sentiment: **{pred_label}**")
-            render_explainable_section(text, pred_label, show_header=False)
-            st.info("ℹ️ SHAP shows which words and tokens contributed to the model's prediction, helping you understand the reasoning behind each sentiment.")
+            render_model_confidence(
+                result.get(
+                    "analysis_text",
+                    result["text"]
+                )
+            )
 
-    render_footer()
+    with actions_col:
 
-# =============================================================
-# VIEW: ABOUT
-# =============================================================
-elif app_mode == "About":
-    render_hero()
-    st.markdown('<p class="main-header">ℹ️ About This Project</p>', unsafe_allow_html=True)
-    st.write(
-        "Course Feedback Sentiment Analysis is an AI-powered educational analytics application "
-        "designed to transform student feedback into clear and actionable insights."
+        with st.container(
+            border=True
+        ):
+
+            st.subheader(
+                "⚡  Quick Actions"
+            )
+
+            report = create_review_report(
+                result
+            )
+
+            # ------------------------------------------------
+            # DOWNLOAD DETAILED REPORT
+            # ------------------------------------------------
+
+            st.download_button(
+
+                "Download Detailed Report",
+
+                icon=":material/description:",
+
+                data=report,
+
+                file_name=(
+                    "review_analysis.txt"
+                ),
+
+                mime="text/plain",
+
+                use_container_width=True
+            )
+
+            # ------------------------------------------------
+            # DOWNLOAD CSV RESULTS
+            # ------------------------------------------------
+
+            st.download_button(
+
+                "Download Results",
+        icon=":material/download:",
+
+                data=create_result_csv(
+                    result
+                ),
+
+                file_name=(
+                    "review_result.csv"
+                ),
+
+                mime="text/csv",
+
+                use_container_width=True
+            )
+
+            # ------------------------------------------------
+            # DOWNLOAD EXPLAINABLE AI GRAPH
+            # ------------------------------------------------
+
+            if st.button(
+                "Prepare Explainable AI Graph",
+                icon=":material/bar_chart:",
+                key="prepare_explanation_png",
+                use_container_width=True
+            ):
+                explanation_png = create_explanation_png(
+                    result.get("analysis_text", result["text"])
+                )
+                if explanation_png is not None:
+                    st.session_state.explanation_png = explanation_png
+
+            if st.session_state.get("explanation_png"):
+                st.download_button(
+                    "Download Explainable AI Graph",
+                    icon=":material/download:",
+                    data=st.session_state.explanation_png,
+                    file_name="explainable_ai_graph.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
+
+    st.info(
+        "ℹ️ SHAP shows which words and tokens "
+        "contributed to the model's prediction, "
+        "helping you understand the reasoning "
+        "behind each sentiment."
     )
+
+
+# ============================================================
+# CSV REVIEW COLUMN DETECTION
+# ============================================================
+
+def detect_review_column(
+    dataframe
+):
+
+    preferred_columns = [
+
+        "Review",
+        "review",
+        "Reviews",
+        "reviews",
+        "Feedback",
+        "feedback",
+        "Comment",
+        "comment",
+        "Text",
+        "text"
+    ]
+
+    for column in preferred_columns:
+
+        if column in dataframe.columns:
+
+            return column
+
+    for column in dataframe.columns:
+
+        if dataframe[
+            column
+        ].dtype == "object":
+
+            values = (
+                dataframe[column]
+                .dropna()
+                .astype(str)
+            )
+
+            if len(values) == 0:
+                continue
+
+            average_length = (
+                values
+                .str
+                .len()
+                .mean()
+            )
+
+            if average_length > 20:
+
+                return column
+
+    return None
+
+
+# ============================================================
+# CSV COURSE COLUMN DETECTION
+# ============================================================
+
+def detect_course_columns(
+    dataframe
+):
+
+    course_id_columns = [
+        "Course ID",
+        "CourseId",
+        "course_id",
+        "courseid",
+        "Course_ID",
+        "course id",
+        "Course Code",
+        "CourseCode",
+        "course_code",
+        "course code",
+        "ID"
+    ]
+
+    course_name_columns = [
+        "Course Name",
+        "CourseName",
+        "course_name",
+        "coursename",
+        "Course",
+        "course",
+        "Course Title",
+        "CourseTitle",
+        "course_title",
+        "course title",
+        "Title",
+        "title"
+    ]
+
+    course_id_column = None
+    course_name_column = None
+
+    for column in course_id_columns:
+
+        if column in dataframe.columns:
+
+            course_id_column = column
+            break
+
+    for column in course_name_columns:
+
+        if column in dataframe.columns:
+
+            if column != course_id_column:
+
+                course_name_column = column
+                break
+
+    return (
+        course_id_column,
+        course_name_column
+    )
+
+
+# ============================================================
+# COURSE LABEL
+# ============================================================
+
+def get_course_label(
+    row,
+    course_id_column,
+    course_name_column
+):
+
+    course_id = ""
+
+    course_name = ""
+
+    if course_id_column is not None:
+
+        value = row.get(
+            course_id_column,
+            ""
+        )
+
+        if pd.notna(value):
+
+            course_id = clean_text(
+                value
+            )
+
+    if course_name_column is not None:
+
+        value = row.get(
+            course_name_column,
+            ""
+        )
+
+        if pd.notna(value):
+
+            course_name = clean_text(
+                value
+            )
+
+    if course_name and course_id:
+
+        return (
+            f"{course_name} "
+            f"({course_id})"
+        )
+
+    if course_name:
+
+        return course_name
+
+    if course_id:
+
+        return course_id
+
+    return "Course Not Specified"
+
+
+# ============================================================
+# FORMAT ASPECT RESULTS
+# ============================================================
+
+def format_aspect_results(
+    aspect_results
+):
+
+    if not aspect_results:
+
+        return ""
+
+    formatted = []
+
+    for item in aspect_results:
+
+        formatted.append(
+            f"{item['aspect']} = "
+            f"{item['sentiment']} = "
+            f"{item['confidence']:.4f}"
+        )
+
+    return " || ".join(
+        formatted
+    )
+
+
+# ============================================================
+# CSV ANALYSIS
+# ============================================================
+
+def analyze_csv(dataframe, model_name):
+    review_column = detect_review_column(dataframe)
+    if review_column is None:
+        return None, None
+
+    course_id_column, course_name_column = detect_course_columns(dataframe)
+    working = dataframe.copy()
+    working["__clean_review__"] = working[review_column].fillna("").astype(str).map(clean_text)
+    valid = working[working["__clean_review__"] != ""].copy()
+
+    if valid.empty:
+        return None, review_column
+
+    if len(valid) > CSV_MAX_ROWS:
+        st.warning(
+            f"This CSV contains {len(valid):,} non-empty reviews. "
+            f"For reliable CPU deployment, only the first {CSV_MAX_ROWS:,} reviews will be analyzed."
+        )
+        valid = valid.head(CSV_MAX_ROWS).copy()
+
+    original_texts = valid["__clean_review__"].tolist()
+
+    # Translation is required for the English TF-IDF component and for the
+    # existing English aspect keyword system. DistilBERT itself does not need it.
+    need_english = model_name in {"Logistic Regression", "Combined"}
+    translation_results = None
+
+    if need_english:
+        # Avoid loading NLLB for a completely English CSV.
+        language_results = translate_feedback_batch(original_texts, force=False)
+        any_non_english = any(
+            item["language"] not in {"en", "unknown"} for item in language_results
+        )
+        if need_english and any_non_english:
+            try:
+                translation_results = translate_feedback_batch(original_texts, force=True)
+            except Exception as error:
+                st.error("Multilingual translation could not be completed.")
+                st.code(str(error))
+                return None, review_column
+        else:
+            translation_results = language_results
+    else:
+        translation_results = [
+            {
+                "original": text, "translated": text, "language": "en",
+                "language_name": "English", "was_translated": False
+            }
+            for text in original_texts
+        ]
+
+    analysis_texts = [item["translated"] for item in translation_results]
+
+    progress = st.progress(0)
+    progress.progress(0.15)
+    try:
+        predictions = predict_sentiment_batch(analysis_texts, model_name)
+    except Exception as error:
+        progress.empty()
+        st.error("Model prediction failed during CSV analysis.")
+        st.code(str(error))
+        return None, review_column
+    progress.progress(0.70)
+
+    rows = []
+    total = len(valid)
+    for position, ((_, source_row), translation, analysis_text, prediction) in enumerate(
+        zip(valid.iterrows(), translation_results, analysis_texts, predictions), start=1
+    ):
+        try:
+            # Keep aspect analysis, but perform it on translated English text.
+            aspect_results = calculate_aspect_results(analysis_text)
+            rows.append({
+                "Course": get_course_label(source_row, course_id_column, course_name_column),
+                "Review": source_row[review_column],
+                "Language": translation["language_name"],
+                "English Translation": analysis_text,
+                "Sentiment": prediction["label"],
+                "Confidence": prediction["confidence"],
+                "Negative": prediction["probabilities"]["NEGATIVE"],
+                "Neutral": prediction["probabilities"]["NEUTRAL"],
+                "Positive": prediction["probabilities"]["POSITIVE"],
+                "Detected Aspects": ", ".join(item["aspect"] for item in aspect_results),
+                "Aspect Analysis": format_aspect_results(aspect_results)
+            })
+        except Exception:
+            continue
+        if position % max(1, total // 10) == 0 or position == total:
+            progress.progress(0.70 + 0.30 * position / max(total, 1))
+
+    progress.empty()
+    if not rows:
+        return None, review_column
+    return pd.DataFrame(rows), review_column
+
+
+# ============================================================
+# BUILD ASPECT DATAFRAME FROM CSV RESULTS
+# ============================================================
+
+def build_csv_aspect_dataframe(
+    results
+):
+
+    aspect_rows = []
+
+    for _, row in results.iterrows():
+
+        course = row.get(
+            "Course",
+            "Course Not Specified"
+        )
+
+        review = row.get(
+            "Review",
+            ""
+        )
+
+        aspect_text = row.get(
+            "Aspect Analysis",
+            ""
+        )
+
+        if not isinstance(
+            aspect_text,
+            str
+        ) or not aspect_text.strip():
+
+            continue
+
+        entries = aspect_text.split(
+            " || "
+        )
+
+        for entry in entries:
+
+            parts = entry.split(
+                " = "
+            )
+
+            if len(parts) != 3:
+
+                continue
+
+            aspect = parts[0].strip()
+
+            sentiment = parts[1].strip()
+
+            try:
+
+                confidence = float(
+                    parts[2].strip()
+                )
+
+            except Exception:
+
+                confidence = 0.0
+
+            aspect_rows.append({
+
+                "Course":
+                    course,
+
+                "Review":
+                    review,
+
+                "Aspect":
+                    aspect,
+
+                "Sentiment":
+                    sentiment,
+
+                "Confidence":
+                    confidence
+            })
+
+    if not aspect_rows:
+
+        return pd.DataFrame(
+            columns=[
+                "Course",
+                "Review",
+                "Aspect",
+                "Sentiment",
+                "Confidence"
+            ]
+        )
+
+    return pd.DataFrame(
+        aspect_rows
+    )
+
+
+# ============================================================
+# CSV ASPECT SUMMARY
+# ============================================================
+
+def create_csv_aspect_summary(
+    aspect_dataframe
+):
+
+    if aspect_dataframe.empty:
+
+        return pd.DataFrame(
+            columns=[
+                "Aspect",
+                "Reviews",
+                "Positive",
+                "Neutral",
+                "Negative",
+                "Overall Sentiment"
+            ]
+        )
+
+    summary_rows = []
+
+    for aspect, group in (
+        aspect_dataframe
+        .groupby("Aspect")
+    ):
+
+        counts = (
+            group[
+                "Sentiment"
+            ]
+            .value_counts()
+        )
+
+        positive = int(
+            counts.get(
+                "POSITIVE",
+                0
+            )
+        )
+
+        neutral = int(
+            counts.get(
+                "NEUTRAL",
+                0
+            )
+        )
+
+        negative = int(
+            counts.get(
+                "NEGATIVE",
+                0
+            )
+        )
+
+        if (
+            positive >= neutral
+            and positive >= negative
+        ):
+
+            overall = "POSITIVE"
+
+        elif negative >= positive and negative >= neutral:
+
+            overall = "NEGATIVE"
+
+        else:
+
+            overall = "NEUTRAL"
+
+        summary_rows.append({
+
+            "Aspect":
+                aspect,
+
+            "Reviews":
+                len(group),
+
+            "Positive":
+                positive,
+
+            "Neutral":
+                neutral,
+
+            "Negative":
+                negative,
+
+            "Overall Sentiment":
+                overall
+        })
+
+    return (
+        pd.DataFrame(
+            summary_rows
+        )
+        .sort_values(
+            "Reviews",
+            ascending=False
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+
+# ============================================================
+# COURSE-WISE ASPECT SUMMARY
+# ============================================================
+
+def create_course_aspect_summary(
+    aspect_dataframe
+):
+
+    if aspect_dataframe.empty:
+
+        return pd.DataFrame(
+            columns=[
+                "Course",
+                "Aspect",
+                "Reviews",
+                "Positive",
+                "Neutral",
+                "Negative",
+                "Overall Sentiment"
+            ]
+        )
+
+    summary_rows = []
+
+    grouped = (
+        aspect_dataframe
+        .groupby(
+            [
+                "Course",
+                "Aspect"
+            ]
+        )
+    )
+
+    for (
+        course,
+        aspect
+    ), group in grouped:
+
+        counts = (
+            group[
+                "Sentiment"
+            ]
+            .value_counts()
+        )
+
+        positive = int(
+            counts.get(
+                "POSITIVE",
+                0
+            )
+        )
+
+        neutral = int(
+            counts.get(
+                "NEUTRAL",
+                0
+            )
+        )
+
+        negative = int(
+            counts.get(
+                "NEGATIVE",
+                0
+            )
+        )
+
+        if (
+            positive >= neutral
+            and positive >= negative
+        ):
+
+            overall = "POSITIVE"
+
+        elif (
+            negative >= positive
+            and negative >= neutral
+        ):
+
+            overall = "NEGATIVE"
+
+        else:
+
+            overall = "NEUTRAL"
+
+        summary_rows.append({
+
+            "Course":
+                course,
+
+            "Aspect":
+                aspect,
+
+            "Reviews":
+                len(group),
+
+            "Positive":
+                positive,
+
+            "Neutral":
+                neutral,
+
+            "Negative":
+                negative,
+
+            "Overall Sentiment":
+                overall
+        })
+
+    return (
+        pd.DataFrame(
+            summary_rows
+        )
+        .sort_values(
+            [
+                "Course",
+                "Reviews"
+            ],
+            ascending=[
+                True,
+                False
+            ]
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+
+# ============================================================
+# CSV RESULTS
+# ============================================================
+
+def render_csv_results(
+    results
+):
+
+    compact_divider()
+
+    st.subheader(
+        "📊 Overall Sentiment Analysis"
+    )
+
+    counts = (
+        results[
+            "Sentiment"
+        ]
+        .value_counts()
+    )
+
+    positive = int(
+        counts.get(
+            "POSITIVE",
+            0
+        )
+    )
+
+    neutral = int(
+        counts.get(
+            "NEUTRAL",
+            0
+        )
+    )
+
+    negative = int(
+        counts.get(
+            "NEGATIVE",
+            0
+        )
+    )
+
+    c1, c2, c3 = (
+        st.columns(3)
+    )
+
+    with c1:
+
+        st.metric(
+            "Positive",
+            f"{positive:,}"
+        )
+
+    with c2:
+
+        st.metric(
+            "Neutral",
+            f"{neutral:,}"
+        )
+
+    with c3:
+
+        st.metric(
+            "Negative",
+            f"{negative:,}"
+        )
+
+    chart_data = pd.DataFrame({
+
+        "Sentiment": [
+
+            "Positive",
+            "Neutral",
+            "Negative"
+        ],
+
+        "Count": [
+
+            positive,
+            neutral,
+            negative
+        ]
+    })
+
+    # Sentiment colors: Positive = green, Neutral = yellow, Negative = red
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    sentiment_labels = [
+        "Positive",
+        "Neutral",
+        "Negative"
+    ]
+
+    sentiment_values = [
+        positive,
+        neutral,
+        negative
+    ]
+
+    sentiment_colors = [
+        "green",
+        "gold",
+        "red"
+    ]
+
+    ax.bar(
+        sentiment_labels,
+        sentiment_values,
+        color=sentiment_colors
+    )
+
+    ax.set_ylabel("Count")
+    ax.set_title("Overall Sentiment Distribution")
+    ax.grid(axis="y", alpha=0.2)
+
+    st.pyplot(
+        fig,
+        use_container_width=True
+    )
+
+    plt.close(fig)
+
+    # --------------------------------------------------------
+    # CSV ASPECT ANALYSIS
+    # --------------------------------------------------------
+
+    aspect_dataframe = (
+        build_csv_aspect_dataframe(
+            results
+        )
+    )
+
+    if not aspect_dataframe.empty:
+
+        compact_divider()
+
+        st.subheader(
+            "🔗 Aspect-Based Sentiment Analysis"
+        )
+
+        st.caption(
+            "Shows which course-related aspects "
+            "are discussed in the feedback and "
+            "whether students feel positively, "
+            "neutrally, or negatively about them."
+        )
+
+        aspect_summary = (
+            create_csv_aspect_summary(
+                aspect_dataframe
+            )
+        )
+
+        st.dataframe(
+            aspect_summary,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        aspect_chart = (
+            aspect_summary
+            .set_index("Aspect")[
+                [
+                    "Positive",
+                    "Neutral",
+                    "Negative"
+                ]
+            ]
+        )
+
+        # Fixed sentiment colors for aspect chart
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+        aspect_chart.plot(
+            kind="bar",
+            ax=ax,
+            color=["green", "gold", "red"]
+        )
+
+        ax.set_xlabel("Aspect")
+        ax.set_ylabel("Count")
+        ax.set_title("Aspect Sentiment Distribution")
+        ax.legend(title="Sentiment")
+        ax.grid(axis="y", alpha=0.2)
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
+
+        st.pyplot(
+            fig,
+            use_container_width=True
+        )
+
+        # Download the overall aspect analysis data and graph
+        aspect_csv = aspect_summary.to_csv(
+            index=False
+        ).encode("utf-8")
+
+        aspect_graph_buffer = BytesIO()
+        fig.savefig(
+            aspect_graph_buffer,
+            format="png",
+            dpi=300,
+            bbox_inches="tight"
+        )
+        aspect_graph_buffer.seek(0)
+
+        aspect_download_col1, aspect_download_col2 = st.columns(2)
+
+        with aspect_download_col1:
+            st.download_button(
+                "Download Overall Aspect Analysis",
+                icon=":material/download:",
+                data=aspect_csv,
+                file_name="overall_aspect_sentiment_analysis.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+
+        with aspect_download_col2:
+            st.download_button(
+                "Download Aspect Graph",
+                icon=":material/image:",
+                data=aspect_graph_buffer.getvalue(),
+                file_name="overall_aspect_sentiment_graph.png",
+                mime="image/png",
+                use_container_width=True
+            )
+
+        plt.close(fig)
+
+        compact_divider()
+
+        st.subheader(
+            "🎓 Course-Wise Aspect Analysis"
+        )
+
+        st.caption(
+            "Aspect sentiment is grouped using "
+            "the Course Name or Course ID available "
+            "in the uploaded CSV."
+        )
+
+        course_summary = (
+            create_course_aspect_summary(
+                aspect_dataframe
+            )
+        )
+
+        available_courses = sorted(
+            course_summary[
+                "Course"
+            ]
+            .dropna()
+            .astype(str)
+            .unique()
+            .tolist()
+        )
+
+        # Download the complete course-wise aspect analysis
+        st.download_button(
+            "Download All Course-Wise Aspect Analysis",
+            icon=":material/download:",
+            data=course_summary.to_csv(
+                index=False
+            ).encode("utf-8"),
+            file_name="course_wise_aspect_sentiment_analysis.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+        if available_courses:
+
+            selected_course = st.selectbox(
+                "Select Course",
+                available_courses
+            )
+
+            selected_course_summary = (
+                course_summary[
+                    course_summary[
+                        "Course"
+                    ].astype(str)
+                    == str(selected_course)
+                ]
+            )
+
+            st.dataframe(
+                selected_course_summary,
+                use_container_width=True,
+                hide_index=True
+            )
+
+            course_chart = (
+                selected_course_summary
+                .set_index("Aspect")[
+                    [
+                        "Positive",
+                        "Neutral",
+                        "Negative"
+                    ]
+                ]
+            )
+
+            # Fixed sentiment colors for course-wise aspect chart
+            fig, ax = plt.subplots(figsize=(10, 5))
+
+            course_chart.plot(
+                kind="bar",
+                ax=ax,
+                color=["green", "gold", "red"]
+            )
+
+            ax.set_xlabel("Aspect")
+            ax.set_ylabel("Count")
+            ax.set_title(
+                f"Aspect Sentiment for {selected_course}"
+            )
+            ax.legend(title="Sentiment")
+            ax.grid(axis="y", alpha=0.2)
+            plt.xticks(rotation=45, ha="right")
+            plt.tight_layout()
+
+            st.pyplot(
+                fig,
+                use_container_width=True
+            )
+
+            # Download the selected course analysis and graph
+            selected_course_csv = selected_course_summary.to_csv(
+                index=False
+            ).encode("utf-8")
+
+            course_graph_buffer = BytesIO()
+            fig.savefig(
+                course_graph_buffer,
+                format="png",
+                dpi=300,
+                bbox_inches="tight"
+            )
+            course_graph_buffer.seek(0)
+
+            course_download_col1, course_download_col2 = st.columns(2)
+
+            with course_download_col1:
+                st.download_button(
+                    "Download Selected Course Analysis",
+                    icon=":material/download:",
+                    data=selected_course_csv,
+                    file_name="selected_course_aspect_sentiment_analysis.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+
+            with course_download_col2:
+                st.download_button(
+                    "Download Course Graph",
+                    icon=":material/image:",
+                    data=course_graph_buffer.getvalue(),
+                    file_name="selected_course_aspect_sentiment_graph.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
+
+            plt.close(fig)
+
+        compact_divider()
+
+        st.subheader(
+            "📋 Detailed Aspect Results"
+        )
+
+        detailed_aspects = (
+            aspect_dataframe[
+                [
+                    "Course",
+                    "Aspect",
+                    "Sentiment",
+                    "Confidence",
+                    "Review"
+                ]
+            ]
+            .copy()
+        )
+
+        st.dataframe(
+            detailed_aspects,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        # Download detailed aspect-level results
+        st.download_button(
+            "Download Detailed Aspect Results",
+            icon=":material/download:",
+            data=detailed_aspects.to_csv(
+                index=False
+            ).encode("utf-8"),
+            file_name="detailed_aspect_sentiment_results.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+    compact_divider()
+
+    st.subheader(
+        "📋 Analysis Results"
+    )
+
+    st.dataframe(
+        results,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.download_button(
+        "⬇️  Download Results",
+        data=results.to_csv(
+            index=False
+        ).encode(
+            "utf-8"
+        ),
+        file_name=(
+            "course_feedback_sentiment_results.csv"
+        ),
+        mime="text/csv",
+        type="primary",
+        use_container_width=True
+    )
+
+
+# ============================================================
+# CSV PAGE
+# ============================================================
+
+def render_csv_analysis():
+
+    st.title(
+        "📄 CSV File Analysis"
+    )
+
+    st.caption(
+        "Analyze sentiment distribution "
+        "across a complete dataset."
+    )
+
+    with st.container(
+        border=True
+    ):
+
+        st.write(
+            "### 📁 Upload Course Feedback"
+        )
+
+        uploaded_file = (
+            st.file_uploader(
+                "Upload CSV File",
+                type=["csv"],
+                help=(
+                    "CSV should contain a course "
+                    "review or feedback text column."
+                )
+            )
+        )
+
+        st.info(
+            "Your CSV can contain additional columns "
+            "such as CourseId, rating, date, or "
+            "other metadata."
+        )
+
+    if uploaded_file is None:
+
+        return
+
+    try:
+
+        dataframe = pd.read_csv(
+            uploaded_file
+        )
+
+    except Exception as error:
+
+        st.error(
+            "Could not read the CSV file."
+        )
+
+        st.code(
+            str(error)
+        )
+
+        return
+
+    review_column = (
+        detect_review_column(
+            dataframe
+        )
+    )
+
+    if review_column is None:
+
+        st.error(
+            "No suitable review or feedback "
+            "column was detected."
+        )
+
+        st.write(
+            "Available columns:"
+        )
+
+        st.write(
+            list(
+                dataframe.columns
+            )
+        )
+
+        return
+
+    st.success(
+        f"Detected review column: "
+        f"**{review_column}**"
+    )
+
+    c1, c2, c3 = (
+        st.columns(3)
+    )
+
+    with c1:
+
+        st.metric(
+            "Rows",
+            f"{len(dataframe):,}"
+        )
+
+    with c2:
+
+        st.metric(
+            "Columns",
+            len(
+                dataframe.columns
+            )
+        )
+
+    with c3:
+
+        st.metric(
+            "Review Column",
+            review_column
+        )
+
+    compact_divider()
+
+    selected_model = st.radio(
+
+        "Select Model for Analysis",
+
+        [
+            "Logistic Regression",
+            "DistilBERT",
+            "Combined"
+        ],
+
+        index=0,
+
+        horizontal=True
+    )
+
+    st.info(
+        "⚡ Performance tip: Logistic Regression is fastest. "
+        "DistilBERT uses batched inference; Combined runs both models. "
+        f"For Cloud deployment, files are limited to {CSV_MAX_ROWS:,} analyzed reviews."
+    )
+
+    if st.button(
+
+        "Analyze CSV",
+
+        icon=":material/search:",
+
+        type="primary",
+
+        use_container_width=True
+    ):
+
+        if (
+            len(dataframe) > 10000
+            and selected_model
+            in {
+                "DistilBERT",
+                "Combined"
+            }
+        ):
+
+            st.warning(
+                f"This file contains "
+                f"{len(dataframe):,} rows. "
+                "DistilBERT analysis can take "
+                "considerable time on a CPU."
+            )
+
+        with st.spinner(
+            "Analyzing CSV file..."
+        ):
+
+            results, detected_column = (
+                analyze_csv(
+                    dataframe,
+                    selected_model
+                )
+            )
+
+        if results is None:
+
+            st.error(
+                "No valid reviews could be analyzed."
+            )
+
+            return
+
+        st.session_state.csv_results = (
+            results
+        )
+
+        st.session_state.csv_model = (
+            selected_model
+        )
+
+        st.session_state.csv_review_column = (
+            detected_column
+        )
+
+        st.success(
+            f"Analysis completed for "
+            f"{len(results):,} reviews."
+        )
+
+    results = (
+        st.session_state.csv_results
+    )
+
+    if results is None:
+
+        return
+
+    render_csv_results(
+        results
+    )
+
+
+# ============================================================
+# ASPECT ANALYSIS PAGE
+# ============================================================
+
+def render_aspect_page():
+
+    st.title(
+        "🔗 Aspect Analysis"
+    )
+
+    st.caption(
+        "Identify important course-related "
+        "aspects and their sentiment."
+    )
+
+    text = st.text_area(
+
+        "Enter course feedback",
+
+        height=150,
+
+        placeholder=(
+            "Example: The instructor was excellent, "
+            "but the assignments were difficult."
+        )
+    )
+
+    if st.button(
+
+        "Analyze Aspects",
+
+        icon=":material/search:",
+
+        type="primary",
+
+        use_container_width=True
+    ):
+
+        if not clean_text(text):
+
+            st.warning(
+                "Please enter a review first."
+            )
+
+            return
+
+        with st.spinner(
+            "Translating and analyzing aspects..."
+        ):
+
+            analysis_text, translation = (
+                prepare_feedback_for_analysis(
+                    text, "Logistic Regression", translate_for_analysis=True
+                )
+            )
+
+            results = (
+                calculate_aspect_results(
+                    analysis_text
+                )
+            )
+
+        if translation.get(
+            "was_translated"
+        ):
+
+            with st.container(
+                border=True
+            ):
+
+                st.subheader(
+                    "🌐  English Translation"
+                )
+
+                st.caption(
+                    "Detected language: "
+                    f"**{translation['language_name']}**"
+                )
+
+                st.markdown(
+                    "**Original Feedback**"
+                )
+
+                st.write(
+                    text
+                )
+
+                st.markdown(
+                    "**English Translation**"
+                )
+
+                st.write(
+                    analysis_text
+                )
+
+            compact_divider()
+
+        if not results:
+
+            st.info(
+                "No specific course aspects "
+                "were detected."
+            )
+
+            return
+
+        st.subheader(
+            "Detected Aspects"
+        )
+
+        for start in range(
+            0,
+            len(results),
+            3
+        ):
+
+            row = results[
+                start:start + 3
+            ]
+
+            columns = st.columns(
+                3
+            )
+
+            for index, item in enumerate(
+                row
+            ):
+
+                with columns[index]:
+
+                    with st.container(
+                        border=True
+                    ):
+
+                        icon = ASPECT_ICONS.get(
+                            item["aspect"],
+                            "🔹"
+                        )
+
+                        st.write(
+                            f"**{icon} "
+                            f"{item['aspect']}**"
+                        )
+
+                        circle = (
+                            sentiment_circle_html(
+                                item["sentiment"]
+                            )
+                        )
+
+                        sentiment_text = (
+                            display_label(
+                                item["sentiment"]
+                            )
+                        )
+
+                        st.markdown(
+                            f"""
+                            <div class="sentiment-row">
+                                {circle}
+                                <span>{sentiment_text}</span>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
+                        st.progress(
+                            item["confidence"]
+                        )
+
+                        st.caption(
+                            "Confidence: "
+                            f"{item['confidence']:.4f}"
+                        )
+
+        compact_divider()
+
+        st.subheader(
+            "Aspect Evidence"
+        )
+
+        evidence = pd.DataFrame(
+            results
+        )[
+
+            [
+                "aspect",
+                "sentiment",
+                "confidence",
+                "sentence"
+            ]
+        ]
+
+        evidence.columns = [
+
+            "Aspect",
+            "Sentiment",
+            "Confidence",
+            "Supporting Text"
+        ]
+
+        st.dataframe(
+
+            evidence,
+
+            use_container_width=True,
+
+            hide_index=True
+        )
+
+
+# ============================================================
+# EXPLAINABLE AI PAGE
+# ============================================================
+
+def render_shap_page():
+
+    st.title(
+        "💡 Explainable AI (SHAP)"
+    )
+
+    st.caption(
+        "Understand which words influence "
+        "the sentiment prediction."
+    )
+
+    text = st.text_area(
+
+        "Enter course feedback",
+
+        height=150,
+
+        placeholder=(
+            "Enter a review to generate "
+            "word-level explanations."
+        )
+    )
+
+    if st.button(
+
+        "Generate Explanation",
+
+        icon=":material/psychology:",
+
+        type="primary",
+
+        use_container_width=True
+    ):
+
+        if not clean_text(text):
+
+            st.warning(
+                "Please enter a review first."
+            )
+
+            return
+
+        with st.spinner(
+            "Preparing the review and generating explanation..."
+        ):
+
+            analysis_text, translation = (
+                prepare_feedback_for_analysis(
+                    text, "Logistic Regression", translate_for_analysis=True
+                )
+            )
+
+            prediction = predict_logistic(
+                analysis_text
+            )
+
+        if translation.get(
+            "was_translated"
+        ):
+
+            with st.container(
+                border=True
+            ):
+
+                st.subheader(
+                    "🌐  English Translation"
+                )
+
+                st.caption(
+                    "Detected language: "
+                    f"**{translation['language_name']}**"
+                )
+
+                st.markdown(
+                    "**Original Feedback**"
+                )
+
+                st.write(
+                    text
+                )
+
+                st.markdown(
+                    "**English Translation**"
+                )
+
+                st.write(
+                    analysis_text
+                )
+
+            compact_divider()
+
+        c1, c2 = (
+            st.columns(2)
+        )
+
+        with c1:
+
+            st.metric(
+
+                "Sentiment",
+
+                display_label(
+                    prediction["label"]
+                )
+            )
+
+        with c2:
+
+            st.metric(
+
+                "Confidence",
+
+                f"{prediction['confidence']:.2%}"
+            )
+
+        compact_divider()
+
+        st.subheader(
+            "Top Contributing Words"
+        )
+
+        render_explanation_chart(
+            analysis_text
+        )
+
+        st.info(
+            "ℹ️ Positive values push the prediction "
+            "toward the selected sentiment class, "
+            "while negative values push it in the "
+            "opposite direction."
+        )
+
+
+# ============================================================
+# ABOUT PAGE
+# ============================================================
+
+def render_about():
+
+    # --------------------------------------------------------
+    # PROJECT OVERVIEW
+    # --------------------------------------------------------
+
+    st.subheader(
+        "ℹ️ About This Project "
+    )
+
     st.write(
-        "The application analyzes individual reviews as well as complete CSV datasets, identifies "
-        "important course-related aspects, determines their sentiment, and provides model-level "
+        "Course Feedback Sentiment Analysis is an "
+        "AI-powered educational analytics application "
+        "designed to transform student feedback into "
+        "clear and actionable insights."
+    )
+
+    st.write(
+        "The application analyzes individual reviews "
+        "as well as complete CSV datasets, identifies "
+        "important course-related aspects, determines "
+        "their sentiment, and provides model-level "
         "explanations to help understand the prediction."
     )
 
-    st.markdown('<p class="section-header">✨ What this application provides</p>', unsafe_allow_html=True)
-    cols = st.columns(3)
-    provides = [
-        ("💬 Single Review", ["Analyze one student review", "Identify overall sentiment",
-                              "Classify as Positive, Neutral, or Negative"]),
-        ("📄 CSV Analysis", ["Analyze complete feedback datasets", "Detect a suitable review column",
-                             "Perform sentiment analysis at scale"]),
-        ("🔗 Aspect Analysis", ["Identify important course-related aspects", "Determine sentiment for each aspect",
-                                "Covers instructor, content, assignments, difficulty, and platform etc."]),
-    ]
-    for col, (title, bullets) in zip(cols, provides):
-        with col:
-            with st.container(border=True):
-                st.markdown(f"**{title}**")
-                for b in bullets:
-                    st.markdown(f"- {b}")
-    cols2 = st.columns(2)
-    provides2 = [
-        ("💡 Explainable AI", ["Explain sentiment predictions", "Identify influential words",
-                               "Show word-level model contributions"]),
-        ("⬇️ Downloadable Results", ["Export analysis results", "Download detailed reports and CSV results",
-                                     "Save Explainable AI graphs as PNG"]),
-    ]
-    for col, (title, bullets) in zip(cols2, provides2):
-        with col:
-            with st.container(border=True):
-                st.markdown(f"**{title}**")
-                for b in bullets:
-                    st.markdown(f"- {b}")
+    compact_divider()
 
-    st.markdown('<p class="section-header">🤖 Machine Learning Models</p>', unsafe_allow_html=True)
-    mcols = st.columns(3)
-    models_info = [
-        ("🔵 TF-IDF + Logistic Regression", ["TF-IDF text feature extraction", "Logistic Regression classification",
-                                             "3 sentiment classes", "Word-level feature contributions",
-                                             "Supports Explainable AI"]),
-        ("🔵 Fine-tuned Multilingual DistilBERT", ["Multilingual DistilBERT transformer", "Fine-tuned for course feedback",
-                                                    "Captures contextual relationships", "3 sentiment classes",
-                                                    "Student feedback analysis"]),
-        ("🔵 Combined Model", ["Combines Logistic Regression + DistilBERT", "Uses both models for prediction",
-                               "Averages probability outputs", "Traditional + transformer approaches",
-                               "Recommended for final presentation"]),
-    ]
-    for col, (title, bullets) in zip(mcols, models_info):
-        with col:
-            with st.container(border=True):
-                st.markdown(f"**{title}**")
-                for b in bullets:
-                    st.markdown(f"- {b}")
+    # --------------------------------------------------------
+    # APPLICATION CAPABILITIES
+    # --------------------------------------------------------
 
-    st.markdown('<p class="section-header">🎯 Sentiment and Aspect Analysis</p>', unsafe_allow_html=True)
-    with st.container(border=True):
-        st.markdown("#### 🎯 Sentiment Detection")
-        st.write("Each review is classified into one of three sentiment categories:")
-        st.markdown("- 🟢 Positive\n- 🟡 Neutral\n- 🔴 Negative")
-
-    st.markdown('<p class="section-header">🔗 Course Aspects</p>', unsafe_allow_html=True)
-    st.write("The application can identify aspects such as:")
-    st.markdown("".join(f'<span class="pill">{a}</span>' for a in ASPECT_NAMES), unsafe_allow_html=True)
-
-    st.markdown('<p class="section-header">⚙️ How the Application Works</p>', unsafe_allow_html=True)
-    steps = [
-        ("Enter or upload feedback", "Analyze a single review or upload a CSV file containing multiple course reviews."),
-        ("Select an AI model", "Choose Logistic Regression, DistilBERT, or the recommended Combined model."),
-        ("Generate sentiment predictions", "The selected model determines the overall sentiment and confidence."),
-        ("Discover course aspects", "The application identifies relevant aspects and evaluates their individual sentiment."),
-        ("Understand the prediction", "Explainable AI highlights words that contributed to the model prediction."),
-        ("Download the results", "Reports, CSV results, and Explainable AI graphs can be exported for further use."),
-    ]
-    for i, (title, desc) in enumerate(steps, 1):
-        st.markdown(f"**{i}️⃣ {title}:** {desc}")
-
-    st.markdown('<p class="section-header">📈 Why This Application Is Useful</p>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="highlight-box">'
-        '<b>🎓 Turning student feedback into actionable insights.</b><br><br>'
-        'Instead of manually reviewing large volumes of course feedback, educators and course teams can '
-        'quickly identify overall sentiment, discover specific areas that students appreciate or struggle with, '
-        'and understand the factors influencing model predictions.'
-        '</div>', unsafe_allow_html=True
+    st.subheader(
+        "✨ What this application provides"
     )
 
-    st.markdown("")
-    checklist = ["💬 Single Review Analysis", "📄 CSV File Analysis", "🔗 Aspect Analysis",
-                 "💡 Explainable AI", "📊 Model Confidence", "⬇️ Downloadable Results", "🖥️ CPU Compatible"]
-    with st.container(border=True):
-        for item in checklist:
-            st.markdown(f'<div class="check-row">✅ {item}</div>', unsafe_allow_html=True)
+    c1, c2, c3 = (
+        st.columns(3)
+    )
 
-    st.markdown("")
-    st.markdown('<div class="highlight-box"><b>Created By Afsah Arshad</b></div>', unsafe_allow_html=True)
+    with c1:
 
-    render_footer()
+        with st.container(
+            border=True
+        ):
+
+            st.markdown(
+                '<div class="capability-heading">💬 Single Review</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                """
+                • Analyze one student review<br>
+                • Identify overall sentiment<br>
+                • Classify as Positive, Neutral, or Negative
+                """,
+                unsafe_allow_html=True
+            )
+
+    with c2:
+
+        with st.container(
+            border=True
+        ):
+
+            st.markdown(
+                '<div class="capability-heading">📄 CSV Analysis</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                """
+                • Analyze complete feedback datasets<br>
+                • Detect a suitable review column<br>
+                • Perform sentiment analysis at scale
+                """,
+                unsafe_allow_html=True
+            )
+
+    with c3:
+
+        with st.container(
+            border=True
+        ):
+
+            st.markdown(
+                '<div class="capability-heading">🔗 Aspect Analysis</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                """
+                • Identify important course-related aspects<br>
+                • Determine sentiment for each aspect<br>
+                • Covers instructor, content, assignments, difficulty, and platform etc.
+                """,
+                unsafe_allow_html=True
+            )
+
+    c1, c2 = (
+        st.columns(2)
+    )
+
+    with c1:
+
+        with st.container(
+            border=True
+        ):
+
+            st.markdown(
+                '<div class="capability-heading">💡 Explainable AI</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                """
+                • Explain sentiment predictions<br>
+                • Identify influential words<br>
+                • Show word-level model contributions
+                """,
+                unsafe_allow_html=True
+            )
+
+    with c2:
+
+        with st.container(
+            border=True
+        ):
+
+            st.markdown(
+                '<div class="capability-heading">📥 Downloadable Results</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                """
+                • Export analysis results<br>
+                • Download detailed reports and CSV results<br>
+                • Save Explainable AI graphs as PNG
+                """,
+                unsafe_allow_html=True
+            )
+
+    compact_divider()
+
+    # --------------------------------------------------------
+    # MACHINE LEARNING MODELS
+    # --------------------------------------------------------
+
+    st.subheader(
+        "🤖 Machine Learning Models"
+    )
+
+    model_1, model_2, model_3 = (
+        st.columns(3)
+    )
+
+    with model_1:
+
+        with st.container(
+            border=True
+        ):
+
+            st.markdown(
+                '<div class="model-card-title">🔵 TF-IDF + Logistic Regression</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                """
+                • TF-IDF text feature extraction<br>
+                • Logistic Regression classification<br>
+                • 3 sentiment classes<br>
+                • Word-level feature contributions<br>
+                • Supports Explainable AI
+                """,
+                unsafe_allow_html=True
+            )
+
+    with model_2:
+
+        with st.container(
+            border=True
+        ):
+
+            st.markdown(
+                '<div class="model-card-title">🔵 Fine-tuned Multilingual DistilBERT</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                """
+                • Multilingual DistilBERT transformer<br>
+                • Fine-tuned for course feedback<br>
+                • Captures contextual relationships<br>
+                • 3 sentiment classes<br>
+                • Student feedback analysis
+                """,
+                unsafe_allow_html=True
+            )
+
+    with model_3:
+
+        with st.container(
+            border=True
+        ):
+
+            st.markdown(
+                '<div class="model-card-title">🔵 Combined Model</div>',
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                """
+                • Combines Logistic Regression + DistilBERT<br>
+                • Uses both models for prediction<br>
+                • Averages probability outputs<br>
+                • Traditional + transformer approaches<br>
+                • Recommended for final presentation
+                """,
+                unsafe_allow_html=True
+            )
+
+    compact_divider()
+
+    # --------------------------------------------------------
+    # SENTIMENT + ASPECT ANALYSIS
+    # --------------------------------------------------------
+
+    st.subheader(
+        "🎯 Sentiment and Aspect Analysis"
+    )
+
+    # Sentiment Detection - first row
+    with st.container(
+        border=True
+    ):
+        st.write(
+            "### 🎯 Sentiment Detection"
+        )
+
+        st.write(
+            "Each review is classified into one of three sentiment categories:"
+        )
+
+        st.markdown(
+            """
+            <div style="display:flex; gap:10px; flex-wrap:wrap; padding-bottom:14px;">
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:7px 14px;">😊 Positive</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:7px 14px;">😐 Neutral</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:7px 14px;">☹️ Negative</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    # Course Aspects - next row
+    with st.container(
+        border=True
+    ):
+        st.write(
+            "### 🔗 Course Aspects"
+        )
+
+        st.write(
+            "The application can identify aspects such as:"
+        )
+
+        st.markdown(
+            """
+            <div style="display:flex; gap:8px; flex-wrap:wrap; line-height:1.8; padding-bottom:16px;">
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Course Content</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Instructor</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Assignments</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Quizzes &amp; Assessments</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Difficulty</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Learning Experience</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Course Structure</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Platform</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Video &amp; Audio</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Certificates</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Duration</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Value</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Practical Application</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Relevance</span>
+                <span style="border:1px solid rgba(128,128,128,0.35); border-radius:8px; padding:5px 10px; display:inline-block;">Overall Experience</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    compact_divider()
+
+    # --------------------------------------------------------
+    # APPLICATION WORKFLOW
+    # --------------------------------------------------------
+
+    st.subheader(
+        "⚙️ How the Application Works"
+    )
+
+    with st.container(
+        border=True
+    ):
+
+        st.markdown(
+            "**1️⃣ Enter or upload feedback:**  "
+            "Analyze a single review or upload a CSV file containing multiple course reviews.",
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            "**2️⃣ Handle multilingual feedback:**  "
+            "Multilingual DistilBERT can analyze supported non-English feedback directly; NLLB translation is loaded only when an English-only analysis feature needs it.",
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            "**3️⃣ Select an AI model:**  "
+            "Choose Logistic Regression, DistilBERT, or the recommended Combined model.",
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            "**4️⃣ Generate sentiment predictions:**  "
+            "The selected model determines the overall sentiment and confidence.",
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            "**5️⃣ Discover course aspects:**  "
+            "The application identifies relevant aspects and evaluates their individual sentiment.",
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            "**6️⃣ Understand the prediction:**  "
+            "Explainable AI highlights words that contributed to the model prediction.",
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            "**7️⃣ Download the results:**  "
+            "Reports, CSV results, and Explainable AI graphs can be exported for further use.",
+            unsafe_allow_html=True
+        )
+
+    compact_divider()
+
+    # --------------------------------------------------------
+    # PROJECT VALUE
+    # --------------------------------------------------------
+
+    st.subheader(
+        "📈 Why This Application Is Useful"
+    )
+
+    st.info(
+        "🎓 **Turning student feedback into actionable insights.**\n\n"
+        "Instead of manually reviewing large volumes of "
+        "course feedback, educators and course teams can "
+        "quickly identify overall sentiment, discover "
+        "specific areas that students appreciate or "
+        "struggle with, and understand the factors "
+        "influencing model predictions."
+    )
+
+    compact_divider()
+
+    # --------------------------------------------------------
+    # PROJECT FEATURES
+    # --------------------------------------------------------
+
+    with st.container(
+        border=True
+    ):
+
+        st.subheader(
+            "📊 Application Features"
+        )
+
+        st.write(
+            "💬 Single Review Analysis"
+        )
+
+        st.write(
+            "📄 CSV File Analysis"
+        )
+
+        st.write(
+            "🌐 Multilingual Input & Local Translation"
+        )
+
+        st.write(
+            "🔗 Aspect Analysis"
+        )
+
+        st.write(
+            "💡 Explainable AI"
+        )
+
+        st.write(
+            "📊 Model Confidence"
+        )
+
+        st.write(
+            "📥 Downloadable Results"
+        )
+
+        st.write(
+            "🖥️ CPU Compatible"
+        )
+
+    compact_divider()
+
+    st.info(
+        "**Created By Afsah Arshad**"
+    )
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+def render_footer():
+
+    compact_divider()
+
+    st.caption(
+        "🎓 Course Feedback Sentiment Analysis  •  "
+        "AI-Powered Education Analytics  •  "
+        "Created By Afsah Arshad"
+    )
+
+
+# ============================================================
+# RUN APPLICATION
+# ============================================================
+
+st.session_state.setdefault("single_result", None)
+st.session_state.setdefault("csv_results", None)
+st.session_state.setdefault("review_text", "")
+st.session_state.setdefault("active_page", "Single Review Analysis")
+st.session_state.setdefault("explanation_png", None)
+
+render_sidebar()
+
+render_header()
+
+current_page = (
+    st.session_state.active_page
+)
+
+
+if current_page == "Single Review Analysis":
+
+    render_single_review()
+
+
+elif current_page == "CSV Analysis":
+
+    render_csv_analysis()
+
+
+elif current_page == "Aspect Analysis":
+
+    render_aspect_page()
+
+
+elif current_page == "Explainable AI (SHAP)":
+
+    render_shap_page()
+
+
+elif current_page == "About":
+
+    render_about()
+
+
+else:
+
+    render_single_review()
+
+
+render_footer()
