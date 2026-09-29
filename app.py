@@ -456,53 +456,6 @@ section.main .stDownloadButton > button:disabled {
     color: #FFFFFF !important;
     opacity: 0.65 !important;
 }
-
-/* =========================================================
-   CSV ANALYSIS PAGE BUTTONS ONLY
-   Keeps sidebar navigation buttons unchanged.
-   ========================================================= */
-
-section.main:has(.csv-analysis-page-marker) .stButton > button,
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button {
-    background: #2563EB !important;
-    color: #FFFFFF !important;
-    border: 1px solid #2563EB !important;
-    border-radius: 10px !important;
-    font-weight: 700 !important;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15) !important;
-}
-
-section.main:has(.csv-analysis-page-marker) .stButton > button p,
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button p,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button p,
-section.main:has(.csv-analysis-page-marker) .stButton > button [data-testid="stIconMaterial"],
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button [data-testid="stIconMaterial"],
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button [data-testid="stIconMaterial"],
-section.main:has(.csv-analysis-page-marker) .stButton > button svg,
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button svg,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button svg {
-    color: #FFFFFF !important;
-    fill: #FFFFFF !important;
-    stroke: #FFFFFF !important;
-}
-
-section.main:has(.csv-analysis-page-marker) .stButton > button:hover,
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button:hover,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:hover {
-    background: #1D4ED8 !important;
-    border-color: #1D4ED8 !important;
-    color: #FFFFFF !important;
-}
-
-section.main:has(.csv-analysis-page-marker) .stButton > button:disabled,
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button:disabled,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:disabled {
-    background: #94A3B8 !important;
-    border-color: #94A3B8 !important;
-    color: #FFFFFF !important;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -1204,6 +1157,44 @@ def majority_sentiment(pos, neu, neg):
     return max(counts, key=counts.get)
 
 
+def generate_csv_overall_suggestion(overall_summary):
+    """Builds an overall CSV-level suggestion using the same aspect suggestions
+    used by Single Review Analysis. Negative aspects are prioritized, followed
+    by neutral areas and positive notes."""
+    if overall_summary is None or overall_summary.empty:
+        return None
+
+    items = []
+    for _, row in overall_summary.iterrows():
+        aspect = str(row["Aspect"])
+        sentiment = str(row["Overall Sentiment"]).upper()
+        suggestion = get_aspect_suggestion(aspect, sentiment)
+        if suggestion:
+            priority = {"NEGATIVE": 0, "NEUTRAL": 1, "POSITIVE": 2}.get(sentiment, 3)
+            items.append((priority, aspect, sentiment, suggestion))
+
+    if not items:
+        return None
+
+    items.sort(key=lambda x: (x[0], x[1]))
+    negative = [x for x in items if x[2] == "NEGATIVE"]
+    neutral = [x for x in items if x[2] == "NEUTRAL"]
+    positive = [x for x in items if x[2] == "POSITIVE"]
+
+    lines = []
+    if negative:
+        lines.append("Prioritize these areas for improvement:")
+        lines.extend([f"- {aspect}: {suggestion}" for _, aspect, _, suggestion in negative])
+    if neutral:
+        lines.append("Areas that could be strengthened:")
+        lines.extend([f"- {aspect}: {suggestion}" for _, aspect, _, suggestion in neutral])
+    if positive:
+        lines.append("What is working well and should be maintained:")
+        lines.extend([f"- {aspect}: {suggestion}" for _, aspect, _, suggestion in positive])
+
+    return "\n".join(lines)
+
+
 # =============================================================
 # SHARED RENDER HELPERS
 # =============================================================
@@ -1418,6 +1409,11 @@ def render_explainable_section(text, pred_label, show_header=True):
 
     return fig
 
+
+# =============================================================
+# ONE-TIME TOAST
+# =============================================================
+st.toast("Turning student feedback into actionable insights", icon="🎓")
 
 # =============================================================
 # SIDEBAR NAVIGATION
@@ -1801,9 +1797,6 @@ if app_mode == "Single Review Analysis":
 # VIEW: CSV ANALYSIS
 # =============================================================
 elif app_mode == "CSV Analysis":
-    # Marker used only to scope CSV-page button styling.
-    # Sidebar buttons are outside this marker and remain unchanged.
-    st.markdown('<span class="csv-analysis-page-marker"></span>', unsafe_allow_html=True)
     render_hero()
     st.markdown('<p class="main-header">Batch CSV Sentiment Analysis</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Upload a CSV file containing course reviews to analyze trends in bulk.</p>', unsafe_allow_html=True)
@@ -1960,6 +1953,22 @@ elif app_mode == "CSV Analysis":
             ax2.legend(title="Sentiment")
             fig2.tight_layout()
             st.pyplot(fig2)
+
+            # ---------------------------------------------------------
+            # Overall suggestion for the complete CSV dataset
+            # ---------------------------------------------------------
+            overall_suggestion = generate_csv_overall_suggestion(overall_summary)
+            if overall_suggestion:
+                st.markdown(
+                    '<p class="section-header">💡 Overall Suggestion</p>',
+                    unsafe_allow_html=True
+                )
+                st.info(
+                    "The following recommendations are based on the same "
+                    "aspect-specific suggestions used in Single Review Analysis, "
+                    "but aggregated across the uploaded CSV.\n\n"
+                    + overall_suggestion
+                )
 
             dl1, dl2 = st.columns(2)
             with dl1:
