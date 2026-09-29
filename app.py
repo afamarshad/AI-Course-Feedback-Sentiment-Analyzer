@@ -94,68 +94,271 @@ st.markdown("""
 .orig-text-left { text-align: left !important; white-space: pre-wrap; direction: ltr; unicode-bidi: plaintext; }
 
 section[data-testid="stSidebar"] {
-    background-color: #0B1B38;
+    background: linear-gradient(
+        180deg,
+        #07152F 0%,
+        #0B1B38 52%,
+        #09172F 100%
+    );
+    border-right: 1px solid #1E3154;
 }
-section[data-testid="stSidebar"] > div { padding-top: 1rem; }
-section[data-testid="stSidebar"] * { color: #E5E7EB; }
 
-.sidebar-logo {
-    width: 52px; height: 44px;
-    display:flex; align-items:center; justify-content:center;
-    margin-bottom: 0.6rem;
+section[data-testid="stSidebar"] > div {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
 }
-.sidebar-logo svg { width: 48px; height: 40px; }
-.sidebar-title { font-size: 1.45rem; font-weight: 800; color: #FFFFFF; line-height:1.25; margin-bottom: 0.4rem;}
-.sidebar-sub { font-size: 0.92rem; color: #9CA3AF; margin-bottom: 0.35rem; }
-.sidebar-author { font-size: 0.88rem; color: #93A3B8; margin-bottom: 0.8rem; }
-.sidebar-divider { border-top: 1px solid #1F2E4D; margin: 0.7rem 0 0.9rem 0; }
 
+section[data-testid="stSidebar"] * {
+    color: #E5E7EB;
+}
+
+/* Brand */
+.sidebar-brand {
+    padding: 0.35rem 0.2rem 0.7rem 0.2rem;
+}
+
+.sidebar-logo-wrap {
+    width: 58px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+        135deg,
+        rgba(59,130,246,0.20),
+        rgba(96,165,250,0.08)
+    );
+    border: 1px solid rgba(96,165,250,0.25);
+    border-radius: 15px;
+    margin-bottom: 0.85rem;
+}
+
+.sidebar-logo-wrap svg {
+    width: 45px;
+    height: 40px;
+}
+
+.sidebar-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #FFFFFF !important;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.45rem;
+}
+
+.sidebar-sub {
+    font-size: 0.82rem;
+    color: #9FB1CA !important;
+    line-height: 1.45;
+    margin-bottom: 0.35rem;
+}
+
+.sidebar-author {
+    font-size: 0.78rem;
+    color: #7185A4 !important;
+    margin-bottom: 0;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #263B5E,
+        transparent
+    );
+    margin: 0.9rem 0 1rem 0;
+}
+
+/* Navigation section labels */
+.sidebar-section-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #7185A4 !important;
+    letter-spacing: 0.12em;
+    margin: 0.85rem 0 0.45rem 0.25rem;
+}
+
+/* Navigation buttons */
 section[data-testid="stSidebar"] div.stButton > button {
     width: 100%;
+    min-height: 43px;
     text-align: left;
-    border-radius: 10px;
-    border: none;
-    background-color: #14213F;
-    color: #E5E7EB !important;
-    padding: 0.65rem 0.9rem;
-    margin-bottom: 0.5rem;
+    border-radius: 11px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #C7D2E3 !important;
+    padding: 0.62rem 0.75rem;
+    margin-bottom: 0.35rem;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     box-shadow: none;
     display: flex !important;
     justify-content: flex-start !important;
     align-items: center !important;
+    transition: all 0.18s ease;
 }
-/* Streamlit wraps the icon + label of an icon-button in nested flex
-   containers that are centered by default. Forcing justify-content and
-   text-align on every nested div/span (not just the immediate child) makes
-   sure the icon and label both hug the left edge, at every nesting level
-   Streamlit happens to render — matching the "Aligned to Left" sketch. */
+
+/* Keep icons and labels aligned to the left */
 section[data-testid="stSidebar"] div.stButton > button div,
 section[data-testid="stSidebar"] div.stButton > button span {
     justify-content: flex-start !important;
     text-align: left !important;
 }
+
 section[data-testid="stSidebar"] div.stButton > button p {
     text-align: left !important;
     margin: 0 !important;
 }
-/* Small gap so the icon doesn't sit flush against the label once both are
-   pinned to the left instead of being centered as a pair. */
+
+/* Icon spacing */
 section[data-testid="stSidebar"] div.stButton > button [data-testid="stIconMaterial"] {
-    margin-right: 0.5rem;
+    margin-right: 0.55rem;
 }
+
+/* Hover */
 section[data-testid="stSidebar"] div.stButton > button:hover {
-    background-color: #1D2E52;
+    background: #14284A !important;
+    border: 1px solid #223D65 !important;
     color: #FFFFFF !important;
-    border: none;
+    transform: translateX(2px);
 }
+
+/* Active */
 section[data-testid="stSidebar"] div.stButton > button[kind="primary"] {
-    background-color: #3B82F6 !important;
+    background: linear-gradient(
+        135deg,
+        #3B82F6 0%,
+        #2563EB 100%
+    ) !important;
+    border: 1px solid #60A5FA !important;
     color: #FFFFFF !important;
+    box-shadow: 0 5px 16px rgba(37, 99, 235, 0.25);
 }
+
 section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:hover {
-    background-color: #2563EB !important;
+    background: linear-gradient(
+        135deg,
+        #60A5FA 0%,
+        #3B82F6 100%
+    ) !important;
+    border-color: #93C5FD !important;
+    transform: translateX(2px);
+}
+
+/* AI model status card */
+.sidebar-status-card {
+    margin-top: 1rem;
+    padding: 0.9rem;
+    background: rgba(15, 35, 68, 0.85);
+    border: 1px solid #203A60;
+    border-radius: 13px;
+}
+
+.sidebar-status-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #FFFFFF !important;
+    margin-bottom: 0.7rem;
+    letter-spacing: 0.03em;
+}
+
+.sidebar-status-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.73rem;
+    color: #AFC0D8 !important;
+    margin: 0.42rem 0;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    min-width: 7px;
+    border-radius: 50%;
+    background: #22C55E;
+    box-shadow: 0 0 7px rgba(34,197,94,0.55);
+}
+
+/* Sentiment legend */
+.sidebar-legend {
+    margin-top: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    background: rgba(15, 35, 68, 0.55);
+    border: 1px solid #1C3457;
+    border-radius: 13px;
+}
+
+.sidebar-legend-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #FFFFFF !important;
+    margin-bottom: 0.55rem;
+}
+
+.sidebar-legend-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: #AFC0D8 !important;
+    margin: 0.35rem 0;
+}
+
+.sidebar-legend-left {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.legend-positive {
+    background: #22C55E;
+}
+
+.legend-neutral {
+    background: #F5C518;
+}
+
+.legend-negative {
+    background: #DC2626;
+}
+
+/* Footer */
+.sidebar-footer {
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #1B3152;
+    text-align: center;
+}
+
+.sidebar-footer-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #9FB1CA !important;
+}
+
+.sidebar-footer-sub {
+    font-size: 0.62rem;
+    color: #617592 !important;
+    margin-top: 0.25rem;
+}
+
+.sidebar-version {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.18rem 0.5rem;
+    border-radius: 20px;
+    background: #14284A;
+    color: #7EA7D9 !important;
+    font-size: 0.58rem;
 }
 </style>
 """, unsafe_allow_html=True)
