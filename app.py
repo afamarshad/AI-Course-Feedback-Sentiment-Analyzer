@@ -1255,10 +1255,10 @@ with st.sidebar:
     # ---------------------------------------------------------
     # INFORMATION
     # ---------------------------------------------------------
-    st.markdown(
-        '<div class="sidebar-section-label">INFORMATION</div>',
-        unsafe_allow_html=True
-    )
+    # st.markdown(
+    #     '<div class="sidebar-section-label">INFORMATION</div>',
+    #     unsafe_allow_html=True
+    # )
 
     info_items = [
         ("About", ":material/info:"),
@@ -1276,32 +1276,6 @@ with st.sidebar:
         ):
             st.session_state.nav = name
             st.rerun()
-
-    # # ---------------------------------------------------------
-    # # AI MODEL STATUS
-    # # ---------------------------------------------------------
-    # st.markdown(
-    #     '<div class="sidebar-status-card">'
-    #     '<div class="sidebar-status-title">AI MODEL STATUS</div>'
-
-    #     '<div class="sidebar-status-row">'
-    #     '<span class="status-dot"></span>'
-    #     '<span>TF-IDF + Logistic Regression</span>'
-    #     '</div>'
-
-    #     '<div class="sidebar-status-row">'
-    #     '<span class="status-dot"></span>'
-    #     '<span>Multilingual DistilBERT</span>'
-    #     '</div>'
-
-    #     '<div class="sidebar-status-row">'
-    #     '<span class="status-dot"></span>'
-    #     '<span>Combined Prediction Engine</span>'
-    #     '</div>'
-
-    #     '</div>',
-    #     unsafe_allow_html=True
-    # ),
 
     # ---------------------------------------------------------
     # FOOTER
