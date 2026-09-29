@@ -395,58 +395,66 @@ section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:hover {
 
 /* =========================================================
    MAIN PAGE BUTTONS ONLY
+   Sidebar is NOT affected
    ========================================================= */
 
-/* All actual Streamlit buttons/download buttons in main content */
-div[data-testid="stAppViewContainer"] div.stButton > button,
-div[data-testid="stAppViewContainer"] div.stDownloadButton > button {
+section.main .stButton > button,
+section.main .stDownloadButton > button {
     background: #2563EB !important;
     color: #FFFFFF !important;
     border: 1px solid #2563EB !important;
     border-radius: 10px !important;
     font-weight: 700 !important;
     box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15) !important;
+    transition: all 0.2s ease-in-out !important;
 }
 
-/* Text */
-div[data-testid="stAppViewContainer"] div.stButton > button p,
-div[data-testid="stAppViewContainer"] div.stDownloadButton > button p {
+/* Button text */
+section.main .stButton > button p,
+section.main .stDownloadButton > button p {
     color: #FFFFFF !important;
 }
 
-/* Streamlit Material icons */
-div[data-testid="stAppViewContainer"] div.stButton > button [data-testid="stIconMaterial"],
-div[data-testid="stAppViewContainer"] div.stDownloadButton > button [data-testid="stIconMaterial"] {
+/* Material icons */
+section.main .stButton > button [data-testid="stIconMaterial"],
+section.main .stDownloadButton > button [data-testid="stIconMaterial"] {
     color: #FFFFFF !important;
 }
 
 /* SVG icons */
-div[data-testid="stAppViewContainer"] div.stButton > button svg,
-div[data-testid="stAppViewContainer"] div.stDownloadButton > button svg {
+section.main .stButton > button svg,
+section.main .stDownloadButton > button svg {
     color: #FFFFFF !important;
     fill: #FFFFFF !important;
     stroke: #FFFFFF !important;
 }
 
 /* Hover */
-div[data-testid="stAppViewContainer"] div.stButton > button:hover,
-div[data-testid="stAppViewContainer"] div.stDownloadButton > button:hover {
+section.main .stButton > button:hover,
+section.main .stDownloadButton > button:hover {
     background: #1D4ED8 !important;
     border-color: #1D4ED8 !important;
     color: #FFFFFF !important;
+    transform: translateY(-1px);
 }
 
-div[data-testid="stAppViewContainer"] div.stButton > button:hover p,
-div[data-testid="stAppViewContainer"] div.stDownloadButton > button:hover p {
+/* Hover text + icons */
+section.main .stButton > button:hover p,
+section.main .stDownloadButton > button:hover p,
+section.main .stButton > button:hover [data-testid="stIconMaterial"],
+section.main .stDownloadButton > button:hover [data-testid="stIconMaterial"] {
     color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+    stroke: #FFFFFF !important;
 }
 
 /* Disabled */
-div[data-testid="stAppViewContainer"] div.stButton > button:disabled,
-div[data-testid="stAppViewContainer"] div.stDownloadButton > button:disabled {
+section.main .stButton > button:disabled,
+section.main .stDownloadButton > button:disabled {
     background: #94A3B8 !important;
     border-color: #94A3B8 !important;
     color: #FFFFFF !important;
+    opacity: 0.65 !important;
 }
 </style>
 """, unsafe_allow_html=True)
