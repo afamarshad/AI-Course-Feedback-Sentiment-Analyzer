@@ -27,7 +27,7 @@ try:
 except Exception:
     TRANSFORMERS_AVAILABLE = False
 
-DISTILBERT_REPO = "Afsah-2027/coursera-multilingual-distilbert"
+DISTILBERT_REPO = "afamarshad/coursera-multilingual-distilbert"
 
 # =============================================================
 # PAGE CONFIG
@@ -44,407 +44,121 @@ SENT_ORDER = ["POSITIVE", "NEUTRAL", "NEGATIVE"]
 SENT_EMOJI = {"POSITIVE": "😊", "NEUTRAL": "😐", "NEGATIVE": "😟"}
 SENT_DOT = {"POSITIVE": "🟢", "NEUTRAL": "🟡", "NEGATIVE": "🔴"}
 
-# ============================================================
-# CUSTOM CSS
-# ============================================================
+# =============================================================
+# GLOBAL STYLE
+# =============================================================
+st.markdown("""
+<style>
+.main-header { font-size: 2.6rem !important; color: #0F172A !important; font-weight: 900 !important; margin-bottom: 0.3rem !important; line-height: 1.15 !important; letter-spacing: -0.01em; }
+.sub-header { font-size: 1rem !important; color: #4B5563 !important; margin-bottom: 1.2rem !important; }
+.section-header { font-size: 2.05rem !important; font-weight: 800 !important; color: #0F172A !important; margin: 1.4rem 0 0.4rem 0 !important; line-height: 1.2 !important; }
+.result-header { font-size: 1.4rem !important; font-weight: 700 !important; color: #0F172A !important; margin: 1.2rem 0 0.4rem 0 !important; line-height: 1.25 !important; }
+.header-icon { display:inline-flex; vertical-align:-8px; margin-right:0.4rem; }
+.main-header .header-icon { width:65px; height:52px; vertical-align:-10px; margin-right:0.5rem; }
+.section-header .header-icon { width:36px; height:31px; vertical-align:-6px; margin-right:0.6rem; }
+.app-footer { text-align:center; color:#6B7280; font-size:0.85rem; margin-top:2.5rem; padding-top:1rem; border-top:1px solid #E5E7EB; }
 
-st.markdown(
-    """
-    <style>
+.st-key-hero-card { background:#EAF2FF; border:1px solid #DCE8FB; border-radius:16px; padding:1.2rem 1.5rem; }
+.info-badge-card {
+    background:transparent; border:2px solid #1E3A5F; border-radius:12px;
+    padding:0.8rem 1rem; height:100%;
+}
+.info-badge-card .badge-title { font-weight:800; color:#1E3A5F; font-size:1rem; margin-bottom:0.3rem; }
+.info-badge-card .badge-body { color:#1E3A5F; font-size:1rem; line-height:1.6; }
 
-    .key-insight-text {
-        white-space: normal;
-        overflow: visible;
-        width: 100%;
-        font-size: 16px;
-        line-height: 1.5;
-        padding-bottom: 8px;
-    }
+.model-desc-box {
+    background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
+    padding:0.8rem 1rem; height:100%;
+}
+.model-desc-box .model-desc-title { font-weight:800; color:#1D4ED8; margin-bottom:0.25rem; }
+.model-desc-box .model-desc-body { color:#1D4ED8; font-size:1rem; line-height:1.55; }
 
-    .capability-heading {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 1.05rem;
-        font-weight: 600;
-        line-height: 1.3;
-        margin-bottom: 1rem;
-    }
+.insight-box {
+    background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
+    padding:1rem 1.2rem;
+}
 
-    .model-card-title {
-        white-space: normal;
-        overflow: visible;
-        word-break: normal;
-        overflow-wrap: break-word;
-        font-size: 1.08rem;
-        font-weight: 700;
-        line-height: 1.3;
-        min-height: 2.8rem;
-        margin-bottom: 0.65rem;
-    }
+.highlight-box {
+    background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
+    padding:1rem 1.2rem; color:#1D4ED8;
+}
+.highlight-box b { color:#1D4ED8; }
 
-    .sentiment-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 16px;
-    }
+.pill {
+    display:inline-block; border:1px solid #D1D5DB; border-radius:8px;
+    padding:0.35rem 0.8rem; margin:0.2rem; font-size:0.92rem; color:#111827;
+}
 
-    .sentiment-circle {
-        width: 12px;
-        height: 12px;
-        min-width: 12px;
-        border-radius: 50%;
-        display: inline-block;
-    }
+.check-row { padding:0.6rem 0; border-bottom:1px solid #F1F5F9; }
 
-    .positive-circle {
-        background-color: #22c55e;
-    }
+.orig-text-left { text-align: left !important; white-space: pre-wrap; direction: ltr; unicode-bidi: plaintext; }
 
-    .negative-circle {
-        background-color: #ef4444;
-    }
+section[data-testid="stSidebar"] {
+    background-color: #0B1B38;
+}
+section[data-testid="stSidebar"] > div { padding-top: 1rem; }
+section[data-testid="stSidebar"] * { color: #E5E7EB; }
 
-    .neutral-circle {
-        background-color: #facc15;
-    }
+.sidebar-logo {
+    width: 52px; height: 44px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom: 0.6rem;
+}
+.sidebar-logo svg { width: 48px; height: 40px; }
+.sidebar-title { font-size: 1.45rem; font-weight: 800; color: #FFFFFF; line-height:1.25; margin-bottom: 0.4rem;}
+.sidebar-sub { font-size: 0.92rem; color: #9CA3AF; margin-bottom: 0.35rem; }
+.sidebar-author { font-size: 0.88rem; color: #93A3B8; margin-bottom: 0.8rem; }
+.sidebar-divider { border-top: 1px solid #1F2E4D; margin: 0.7rem 0 0.9rem 0; }
 
-    /* ============================================================
-       MAIN HEADER
-       ============================================================ */
-
-    /* ============================================================
-       MAIN HEADER
-       Native Streamlit container styling — no raw HTML markup.
-       ============================================================ */
-
-    .st-key-main_header {
-        background: #eaf3ff;
-        border: 1px solid #d7e6f8;
-        border-radius: 14px;
-        padding: 24px 28px 22px 28px;
-        margin: 0;
-    }
-
-    .st-key-main_header [data-testid="stHorizontalBlock"] {
-        align-items: flex-start;
-        gap: 24px;
-    }
-
-    .st-key-main_header [data-testid="stColumn"]:first-child
-    [data-testid="stHorizontalBlock"] {
-        align-items: flex-start;
-    }
-
-    .st-key-main_header [data-testid="stColumn"]:first-child
-    [data-testid="stColumn"]:first-child {
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-    }
-
-    .st-key-main_header [data-testid="stColumn"]:first-child {
-        min-width: 0;
-    }
-
-    .st-key-main_header h2 {
-        margin: 0 !important;
-        padding: 0 !important;
-        font-size: 2.85rem !important;
-        line-height: 1.08 !important;
-        letter-spacing: -0.025em !important;
-        font-weight: 800 !important;
-        color: #0f172a !important;
-    }
-
-    .st-key-header_info {
-        border: 1.5px solid #123f78 !important;
-        border-radius: 10px !important;
-        background: transparent !important;
-        padding: 12px 22px 16px 16px !important;
-        box-sizing: border-box;
-        min-height: 0 !important;
-    }
-
-    .st-key-header_info p {
-        margin: 0 !important;
-        padding: 0 !important;
-        color: #123f78 !important;
-    }
-
-    .st-key-header_info [data-testid="stMarkdownContainer"] {
-        padding: 0 !important;
-    }
-
-    .header-info-title {
-        color: #123f78 !important;
-        font-size: 0.98rem !important;
-        font-weight: 700 !important;
-        line-height: 1.3 !important;
-        margin: 0 0 5px 0 !important;
-    }
-
-    .header-info-text {
-        color: #123f78 !important;
-        font-size: 0.88rem !important;
-        font-weight: 500 !important;
-        line-height: 1.45 !important;
-        margin: 0 !important;
-    }
-
-    .main-header-title {
-        margin: 0 !important;
-        padding: 0 !important;
-        font-size: 2.85rem !important;
-        line-height: 1.08 !important;
-        letter-spacing: -0.025em;
-        font-weight: 800 !important;
-        color: #0f172a !important;
-    }
-
-    .main-header-subtitle {
-        margin: 10px 0 0 0 !important;
-        padding: 0 !important;
-        font-size: 1.08rem !important;
-        line-height: 1.5 !important;
-        color: #667085 !important;
-    }
-
-    @media (max-width: 900px) {
-        .st-key-main_header {
-            padding: 20px;
-        }
-
-        .st-key-main_header [data-testid="stHorizontalBlock"] {
-            gap: 14px;
-        }
-
-        .main-header-title {
-            font-size: 2.35rem !important;
-        }
-    }
-
-    /* ============================================================
-       COMPACT DIVIDERS
-       Use a custom rule instead of Streamlit's default divider
-       so the vertical spacing is fully controlled.
-       ============================================================ */
-
-    .compact-divider {
-        border: 0 !important;
-        border-top: 1px solid #d1d5db !important;
-        margin: 0.55rem 0 !important;
-        padding: 0 !important;
-        height: 0 !important;
-        display: block !important;
-    }
-
-    /* Keep page headings close to the divider above them. */
-    div[data-testid="stHeading"] h1,
-    h1 {
-        margin-top: 0.35rem !important;
-    }
-
-    /* Keep the header-to-divider transition compact. */
-    .main-header-divider {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* ============================================================
-       BUTTON + SIDEBAR THEME
-       ============================================================ */
-
-    /* Make all main-page buttons and download buttons blue */
-    div.stButton > button,
-    div.stDownloadButton > button,
-    button[kind="secondary"],
-    button[kind="primary"] {
-        background-color: #2563eb !important;
-        color: #ffffff !important;
-        border: 1px solid #1d4ed8 !important;
-        border-radius: 6px !important;
-        font-weight: 600 !important;
-    }
-
-    div.stButton > button:hover,
-    div.stDownloadButton > button:hover,
-    button[kind="secondary"]:hover,
-    button[kind="primary"]:hover {
-        background-color: #1d4ed8 !important;
-        color: #ffffff !important;
-        border-color: #1e40af !important;
-    }
-
-    div.stButton > button:focus,
-    div.stDownloadButton > button:focus,
-    button[kind="secondary"]:focus,
-    button[kind="primary"]:focus {
-        color: #ffffff !important;
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) !important;
-    }
-
-    /* ============================================================
-       BUTTON ICONS
-       Keep all Streamlit button icons solid white
-       ============================================================ */
-
-    div.stButton > button [data-testid="stIconMaterial"],
-    div.stDownloadButton > button [data-testid="stIconMaterial"],
-    div.stButton > button .material-symbols-rounded,
-    div.stButton > button .material-symbols-outlined,
-    div.stDownloadButton > button .material-symbols-rounded,
-    div.stDownloadButton > button .material-symbols-outlined {
-        color: #ffffff !important;
-        fill: #ffffff !important;
-        font-variation-settings:
-            "FILL" 1,
-            "wght" 700,
-            "GRAD" 0,
-            "opsz" 24 !important;
-    }
-
-    /* Navy/dark-blue sidebar */
-    section[data-testid="stSidebar"] {
-        background-color: #0b1f3a !important;
-    }
-
-    section[data-testid="stSidebar"] > div {
-        background-color: #0b1f3a !important;
-    }
-
-    /* Move the entire sidebar content slightly upward */
-    section[data-testid="stSidebar"] > div {
-        padding-top: 0.75rem !important;
-    }
-
-    section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
-        padding-top: 0.75rem !important;
-    }
-
-    /* Sidebar text */
-    section[data-testid="stSidebar"] * {
-        color: #ffffff !important;
-    }
-
-    section[data-testid="stSidebar"] .stCaption,
-    section[data-testid="stSidebar"] small {
-        color: #dbeafe !important;
-    }
-
-    /* Sidebar navigation: keep the entire icon + text group left aligned */
-    section[data-testid="stSidebar"] div.stButton > button {
-        justify-content: flex-start !important;
-        text-align: left !important;
-    }
-
-    section[data-testid="stSidebar"] div.stButton > button > div {
-        width: auto !important;
-        flex: 0 0 auto !important;
-        justify-content: flex-start !important;
-        text-align: left !important;
-    }
-
-    section[data-testid="stSidebar"] div.stButton > button p {
-        margin: 0 !important;
-        text-align: left !important;
-    }
-
-    /* Sidebar button icons: solid white */
-    section[data-testid="stSidebar"] div.stButton > button [data-testid="stIconMaterial"],
-    section[data-testid="stSidebar"] div.stButton > button .material-symbols-rounded,
-    section[data-testid="stSidebar"] div.stButton > button .material-symbols-outlined {
-        color: #ffffff !important;
-        fill: #ffffff !important;
-        font-variation-settings:
-            "FILL" 1,
-            "wght" 700,
-            "GRAD" 0,
-            "opsz" 24 !important;
-    }
-
-    /* Sidebar navigation buttons */
-    /* Default: transparent with dark-blue text */
-    section[data-testid="stSidebar"] div.stButton > button[kind="secondary"] {
-        background-color: rgba(255, 255, 255, 0.10) !important;
-        color: #0B1F3A !important;
-        border: 1px solid rgba(255, 255, 255, 0.14) !important;
-        font-weight: 600 !important;
-        transition: all 0.2s ease-in-out !important;
-    }
-
-    /* Hover: keep transparent and highlight the border in blue */
-    section[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover {
-        background-color: rgba(255, 255, 255, 0.10) !important;
-        color: #0B1F3A !important;
-        border: 1px solid #3B82F6 !important;
-        box-shadow: none !important;
-    }
-
-    /* Selected: blue background with white text */
-    section[data-testid="stSidebar"] div.stButton > button[kind="primary"] {
-        background-color: #3B82F6 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #3B82F6 !important;
-        font-weight: 600 !important;
-        box-shadow: none !important;
-    }
-
-    /* Keep selected button blue */
-    section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:hover,
-    section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:focus,
-    section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:active {
-        background-color: #3B82F6 !important;
-        color: #FFFFFF !important;
-        border-color: #3B82F6 !important;
-        box-shadow: none !important;
-    }
-
-    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
-        color: #ffffff !important;
-    }
-
-    /* Sidebar brand icon: centered, slightly larger, and blue */
-    .sidebar-brand-icon {
-        display: flex;
-        justify-content: flex-start;
-        align-items: flex-start;
-        width: 100%;
-        margin: 0 0 10px 0;
-        padding-left: 4px;
-        padding: 0;
-        line-height: 1;
-    }
-
-    .sidebar-brand-icon svg {
-        width: 46px;
-        height: 46px;
-        display: block;
-        fill: #3B82F6 !important;
-    }
-
-    /* Reduce spacing between sidebar heading and subtitle */
-    .sidebar-brand-title {
-        margin: 0 !important;
-        padding: 0 !important;
-        line-height: 1.25 !important;
-        font-size: 1.45rem !important;
-        font-weight: 700 !important;
-    }
-
-    .sidebar-brand-subtitle {
-        margin: 10px 0 0 0 !important;
-        padding: 0 !important;
-        line-height: 1.35 !important;
-        font-size: 1rem !important;
-        color: #dbeafe !important;
-    }
-
+section[data-testid="stSidebar"] div.stButton > button {
+    width: 100%;
+    text-align: left;
+    border-radius: 10px;
+    border: none;
+    background-color: #14213F;
+    color: #E5E7EB !important;
+    padding: 0.65rem 0.9rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: none;
+    display: flex !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+}
+/* Streamlit wraps the icon + label of an icon-button in nested flex
+   containers that are centered by default. Forcing justify-content and
+   text-align on every nested div/span (not just the immediate child) makes
+   sure the icon and label both hug the left edge, at every nesting level
+   Streamlit happens to render — matching the "Aligned to Left" sketch. */
+section[data-testid="stSidebar"] div.stButton > button div,
+section[data-testid="stSidebar"] div.stButton > button span {
+    justify-content: flex-start !important;
+    text-align: left !important;
+}
+section[data-testid="stSidebar"] div.stButton > button p {
+    text-align: left !important;
+    margin: 0 !important;
+}
+/* Small gap so the icon doesn't sit flush against the label once both are
+   pinned to the left instead of being centered as a pair. */
+section[data-testid="stSidebar"] div.stButton > button [data-testid="stIconMaterial"] {
+    margin-right: 0.5rem;
+}
+section[data-testid="stSidebar"] div.stButton > button:hover {
+    background-color: #1D2E52;
+    color: #FFFFFF !important;
+    border: none;
+}
+section[data-testid="stSidebar"] div.stButton > button[kind="primary"] {
+    background-color: #3B82F6 !important;
+    color: #FFFFFF !important;
+}
+section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:hover {
+    background-color: #2563EB !important;
+}
 </style>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
 # =============================================================
 # MODEL LOADING
