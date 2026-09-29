@@ -731,38 +731,74 @@ def cached_translate(text, lang_code):
 # ASPECT KEYWORDS (15 aspects)
 # =============================================================
 ASPECT_KEYWORDS = {
-    "Course Content": ["content", "course content", "material", "materials", "topics",
-                        "topic", "lessons", "lesson", "curriculum", "concepts", "concept",
-                        "theory", "information", "syllabus"],
-    "Instructor": ["instructor", "teacher", "professor", "lecturer", "mentor", "teaching",
-                   "teach", "taught", "explained", "explanation", "lecture", "lectures"],
-    "Assignments": ["assignment", "assignments", "homework", "exercise", "exercises",
-                     "project", "projects", "task", "tasks"],
-    "Quizzes & Assessments": ["quiz", "quizzes", "test", "tests", "exam", "exams",
-                               "assessment", "assessments", "grading", "grade", "grades"],
-    "Difficulty": ["difficult", "difficulty", "easy", "easier", "hard", "challenging",
-                   "challenge", "complex", "complicated", "simple", "beginner", "advanced"],
-    "Learning Experience": ["learn", "learned", "learning", "experience", "understand",
-                             "understanding", "helpful", "useful", "skill", "skills",
-                             "improved", "improve"],
-    "Course Structure": ["structure", "structured", "organized", "organised", "organization",
-                          "sequence", "order", "module", "modules", "section", "sections"],
-    "Platform": ["platform", "website", "app", "application", "interface", "portal",
-                 "system", "dashboard", "navigation"],
-    "Video & Audio": ["video", "videos", "audio", "sound", "recording", "recordings",
-                       "playback", "visuals", "voice"],
-    "Certificates": ["certificate", "certificates", "certification", "credential",
-                      "credentials", "diploma"],
-    "Duration": ["duration", "length", "time", "hours", "hour", "week", "weeks", "short", "long", "pace", "pacing"],
-    "Value": ["value", "worth", "price", "cost", "affordable", "expensive", "cheap",
-              "money"],
-    "Practical Application": ["practical", "application", "applications", "real-world",
-                               "real world", "hands-on", "hands on", "apply", "applied",
-                               "implementation", "practice"],
-    "Relevance": ["relevant", "relevance", "up-to-date", "up to date", "outdated",
-                  "current", "industry"],
-    "Overall Experience": ["overall", "experience", "satisfied", "satisfaction", "enjoyed",
-                            "enjoy", "recommend", "recommended", "great course", "amazing"],
+    "Course Content": [
+            "content", "topic", "topics", "lesson", "lessons", "material", "materials","curriculum", "concept", "concepts", "subject", "subjects", "course content",
+            "course material", "learning material", "study material", "lecture", "lectures","theory", "theories", "case study", "case studies"
+        ],
+    "Instructor": [
+            "instructor", "teacher", "professor", "lecturer", "trainer", "educator", "teaching", "teach", "taught", "explanation", "explained", "explain",
+            "instruction", "instructions", "guidance", "feedback", "presentation","presenter", "teaching style", "teaching method", "instructor style","instructor feedback"
+        ],
+    "Assignments": [
+            "assignment", "assignments", "homework", "exercise", "exercises", "task","tasks", "project", "projects", "submission", "submissions", "peer review",
+            "peer reviewed", "practical assignment", "graded assignment"
+        ],
+    "Quizzes & Assessments": [
+            "quiz", "quizzes", "test", "tests", "exam", "exams", "assessment","assessments", "graded quiz", "graded quizzes", "graded test", "graded tests",
+            "final exam", "final assessment", "knowledge check", "knowledge checks","evaluation", "evaluations"
+        ],
+    "Difficulty": [
+            "difficult", "difficulty", "hard", "easy", "challenging", "confusing","complex", "simple", "complicated", "advanced", "beginner", "basic",
+            "struggle", "struggled", "struggling", "manageable", "overwhelming","overwhelmed", "straightforward", "too difficult", "too easy",
+            "easy to understand", "hard to understand"
+        ],
+    "Learning Experience": [
+            "learning", "learn", "learned", "learning experience", "understand","understanding", "skills", "skill", "educational", "insight", "insights",
+            "improve", "improvement", "progress", "learned a lot", "learn something","gained knowledge", "gained skills", "new skills", "new knowledge"
+        ],
+    "Course Structure": [
+            "structure", "structured", "organized", "organised", "organization","organisation", "sequence", "module", "modules", "section", "sections",
+            "chapter", "chapters", "unit", "units", "course flow", "course structure","course organization", "course organisation", "well organized",
+            "well organised", "poorly organized", "poorly organised"
+        ],
+    "Platform": [
+            "platform", "website", "interface", "user interface", "UI", "app","application", "navigation", "navigate", "loading", "load", "buffering",
+            "playback", "technical", "technical issue", "technical issues", "technology","software", "bug", "bugs", "error", "errors", "login", "access", "accessibility"
+        ],
+    "Video & Audio": [
+            "video", "videos", "lecture video", "lecture videos", "video quality","video resolution", "video clarity", "audio", "audio quality", "sound quality",
+            "sound", "voice quality", "voice", "subtitles", "subtitle", "captions","caption", "transcript", "transcripts", "video playback", "audio clarity"
+        ],
+    "Certificates": [
+            "certificate", "certificates", "certification", "certifications","credential", "credentials", "completion certificate", "course certificate",
+            "certificate of completion", "digital certificate", "certification process"
+        ],
+    "Duration": [
+            "duration", "course duration", "course length", "length", "hour", "hours","week", "weeks", "day", "days", "time commitment", "time required","study time", "learning time", "completion time", "too long", "too short",
+            "time consuming", "time-consuming", "pace", "pacing"
+        ],
+    "Value": [
+            "value", "worth", "price", "cost", "money", "benefit", "benefits","valuable", "worthwhile", "affordable", "expensive", "cheap", "pricing",
+            "course fee", "fee", "value for money", "worth the money", "worth the price","return on investment", "ROI"
+        ],
+    "Practical Application": [
+            "practical", "practical application", "real world", "real-world", "real life","real-life", "hands on", "hands-on", "hands on experience", "industry example",
+            "industry examples", "real world example", "real world examples","apply knowledge", "apply skills", "applying knowledge", "applying skills",
+            "practical skills", "practical knowledge"
+        ],
+    "Relevance": [
+            "relevant", "relevance", "up to date", "up-to-date", "current information","modern", "outdated", "obsolete", "industry relevant", "industry relevance",
+            "job relevant", "career relevant", "relevant to my work","relevant to my career"
+        ],
+    "Overall Experience": [
+            "overall experience", "course experience", "overall course experience","overall learning experience", "student experience", "my experience",
+            "my overall experience", "experience with the course","experience of the course", "general experience", "overall impression",
+            "general impression", "overall satisfaction", "course satisfaction","overall feeling", "general feeling", "overall opinion", "general opinion",
+            "opinion about the course", "opinion of the course", "enjoyed the course","enjoyment of the course", "satisfied with the course",
+            "dissatisfied with the course", "happy with the course","unhappy with the course", "liked the course", "loved the course",
+            "disliked the course", "recommend the course", "recommend this course","would recommend", "not recommend", "course was", "course felt",
+            "felt about the course"
+        ],
 }
 ASPECT_NAMES = list(ASPECT_KEYWORDS.keys())
 
@@ -1358,8 +1394,6 @@ if app_mode == "Single Review Analysis":
     with text_col:
         user_review = st.text_area("Type your own review", max_chars=1000,
                                     key="single_review_text", placeholder="Type or paste feedback here...")
-                                    # ,value=st.session_state.get("single_review_text",
-                                    #       "The instructor was good and the content was useful, but some assignments were difficult."))
         st.caption(f"{len(user_review)}/1000")
 
     st.markdown("")
