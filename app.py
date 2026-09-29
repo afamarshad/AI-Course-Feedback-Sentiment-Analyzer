@@ -2,6 +2,7 @@ import io
 import re
 import os
 import json
+import zipfile
 import html as html_lib
 import joblib
 import numpy as np
@@ -456,6 +457,35 @@ section.main .stDownloadButton > button:disabled {
     color: #FFFFFF !important;
     opacity: 0.65 !important;
 }
+
+
+/* CSV Analysis page controls only. Sidebar controls are intentionally excluded. */
+section.main:has(.csv-analysis-page-marker) .stButton > button,
+section.main:has(.csv-analysis-page-marker) .stDownloadButton > button,
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button {
+    background: #2563EB !important;
+    color: #FFFFFF !important;
+    border: 1px solid #2563EB !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+}
+section.main:has(.csv-analysis-page-marker) .stButton > button p,
+section.main:has(.csv-analysis-page-marker) .stDownloadButton > button p,
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button p,
+section.main:has(.csv-analysis-page-marker) .stButton > button svg,
+section.main:has(.csv-analysis-page-marker) .stDownloadButton > button svg,
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button svg {
+    color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+    stroke: #FFFFFF !important;
+}
+section.main:has(.csv-analysis-page-marker) .stButton > button:hover,
+section.main:has(.csv-analysis-page-marker) .stDownloadButton > button:hover,
+section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:hover {
+    background: #1D4ED8 !important;
+    border-color: #1D4ED8 !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1152,6 +1182,18 @@ def df_to_csv_bytes(df):
     return df.to_csv(index=False).encode("utf-8-sig")
 
 
+def make_zip_bytes(files):
+    """Create an in-memory ZIP from {filename: bytes/file-like} entries."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for filename, content in files.items():
+            if hasattr(content, "getvalue"):
+                content = content.getvalue()
+            zf.writestr(filename, content)
+    buf.seek(0)
+    return buf.getvalue()
+
+
 def majority_sentiment(pos, neu, neg):
     counts = {"POSITIVE": pos, "NEUTRAL": neu, "NEGATIVE": neg}
     return max(counts, key=counts.get)
@@ -1410,10 +1452,10 @@ def render_explainable_section(text, pred_label, show_header=True):
     return fig
 
 
-# # =============================================================
-# # ONE-TIME TOAST
-# # =============================================================
-# st.toast("Turning student feedback into actionable insights", icon="🎓")
+# =============================================================
+# ONE-TIME TOAST
+# =============================================================
+st.toast("Turning student feedback into actionable insights", icon="🎓")
 
 # =============================================================
 # SIDEBAR NAVIGATION
@@ -1797,6 +1839,7 @@ if app_mode == "Single Review Analysis":
 # VIEW: CSV ANALYSIS
 # =============================================================
 elif app_mode == "CSV Analysis":
+    st.markdown('<span class="csv-analysis-page-marker"></span>', unsafe_allow_html=True)
     render_hero()
     st.markdown('<p class="main-header">Batch CSV Sentiment Analysis</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Upload a CSV file containing course reviews to analyze trends in bulk.</p>', unsafe_allow_html=True)
@@ -1954,14 +1997,6 @@ elif app_mode == "CSV Analysis":
             fig2.tight_layout()
             st.pyplot(fig2)
 
-            dl1, dl2 = st.columns(2)
-            with dl1:
-                st.download_button("⬇️ Download Overall Aspect Analysis", df_to_csv_bytes(overall_summary),
-                                    "overall_aspect_analysis.csv", "text/csv", use_container_width=True, on_click="ignore")
-            with dl2:
-                st.download_button("🖼️ Download Aspect Graph", fig_to_png_bytes(fig2),
-                                    "aspect_graph.png", "image/png", use_container_width=True, on_click="ignore")
-            
             # ---------------------------------------------------------
             # Overall suggestion for the complete CSV dataset
             # ---------------------------------------------------------
@@ -1976,6 +2011,32 @@ elif app_mode == "CSV Analysis":
                     "aspect-specific suggestions used in Single Review Analysis, "
                     "but aggregated across the uploaded CSV.\n\n"
                     + overall_suggestion
+                )
+
+            overall_suggestion_txt = (
+                "COURSE FEEDBACK SENTIMENT ANALYSIS - OVERALL SUGGESTIONS\n"
+                "Created By Afsah Arshad\n"
+                "==================================================\n\n"
+                + (overall_suggestion or "No aspect-based suggestions were generated for this dataset.")
+                + "\n"
+            ).encode("utf-8")
+            overall_package = make_zip_bytes({
+                "overall_aspect_analysis.csv": df_to_csv_bytes(overall_summary),
+                "aspect_graph.png": fig_to_png_bytes(fig2),
+                "overall_suggestions.txt": overall_suggestion_txt,
+            })
+            overall_dl_col1, overall_dl_col2 = st.columns(2)
+            with overall_dl_col1:
+                st.download_button(
+                    "⬇️ Download Overall Analysis Package", overall_package,
+                    "overall_aspect_analysis.zip", "application/zip",
+                    use_container_width=True, on_click="ignore"
+                )
+            with overall_dl_col2:
+                st.download_button(
+                    "📄 Download Overall Suggestions (TXT)", overall_suggestion_txt,
+                    "overall_suggestions.txt", "text/plain",
+                    use_container_width=True, on_click="ignore"
                 )
 
             st.markdown(f'<p class="section-header">{hicon("cap")} Course-Wise Aspect Analysis</p>', unsafe_allow_html=True)
@@ -1996,9 +2057,6 @@ elif app_mode == "CSV Analysis":
                     columns={"POSITIVE": "Positive", "NEUTRAL": "Neutral", "NEGATIVE": "Negative"})
                 course_summary = course_summary[["Course", "Aspect", "Reviews", "Positive", "Neutral", "Negative", "Overall Sentiment"]]
 
-                st.download_button("⬇️ Download All Course-Wise Aspect Analysis", df_to_csv_bytes(course_summary),
-                                    "course_wise_aspect_analysis.csv", "text/csv", use_container_width=True, on_click="ignore")
-
                 course_options = sorted(course_summary["Course"].unique().tolist())
                 selected_course = st.selectbox("Select Course", course_options)
 
@@ -2015,13 +2073,16 @@ elif app_mode == "CSV Analysis":
                 fig3.tight_layout()
                 st.pyplot(fig3)
 
-                dl3, dl4 = st.columns(2)
-                with dl3:
-                    st.download_button("⬇️ Download Selected Course Analysis", df_to_csv_bytes(course_view),
-                                        f"{selected_course}_aspect_analysis.csv", "text/csv", use_container_width=True, on_click="ignore")
-                with dl4:
-                    st.download_button("🖼️ Download Course Graph", fig_to_png_bytes(fig3),
-                                        f"{selected_course}_aspect_graph.png", "image/png", use_container_width=True, on_click="ignore")
+                course_package = make_zip_bytes({
+                    "course_wise_aspect_analysis.csv": df_to_csv_bytes(course_summary),
+                    f"{selected_course}_aspect_analysis.csv": df_to_csv_bytes(course_view),
+                    f"{selected_course}_aspect_graph.png": fig_to_png_bytes(fig3),
+                })
+                st.download_button(
+                    "⬇️ Download Course-Wise Analysis Package", course_package,
+                    "course_wise_aspect_analysis.zip", "application/zip",
+                    use_container_width=True, on_click="ignore"
+                )
 
             st.markdown(f'<p class="section-header">{hicon("clipboard")} Detailed Aspect Results</p>', unsafe_allow_html=True)
             detailed = aspect_df[["Course", "Aspect", "Sentiment", "Confidence", "Review"]] if course_col else aspect_df[["Aspect", "Sentiment", "Confidence", "Review"]]
