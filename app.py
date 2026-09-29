@@ -432,8 +432,8 @@ section.main .stDownloadButton > button svg {
 /* Hover */
 section.main .stButton > button:hover,
 section.main .stDownloadButton > button:hover {
-    background: #285BD0 !important;
-    border-color: #285BD0 !important;
+    background: #1D4ED8 !important;
+    border-color: #1D4ED8 !important;
     color: #FFFFFF !important;
     transform: translateY(-1px);
 }
@@ -465,26 +465,12 @@ section.main .stDownloadButton > button:disabled {
 section.main:has(.csv-analysis-page-marker) .stButton > button,
 section.main:has(.csv-analysis-page-marker) .stDownloadButton > button,
 section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button {
-    background: #2F64E5 !important;
+    background: #2563EB !important;
     color: #FFFFFF !important;
-    border: 1px solid #2F64E5 !important;
+    border: 1px solid #2563EB !important;
     border-radius: 10px !important;
-    min-height: 64px !important;
-    height: 64px !important;
-    padding: 0 22px !important;
-    font-size: 18px !important;
-    line-height: 1.2 !important;
-    font-weight: 500 !important;
-    box-shadow: none !important;
-    transition: background-color 0.15s ease, border-color 0.15s ease !important;
-}
-
-section.main:has(.csv-analysis-page-marker) .stButton > button > div,
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button > div,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button > div {
-    justify-content: center !important;
-    align-items: center !important;
-    gap: 10px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15) !important;
 }
 
 section.main:has(.csv-analysis-page-marker) .stButton > button p,
@@ -504,8 +490,8 @@ section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] butto
 section.main:has(.csv-analysis-page-marker) .stButton > button:hover,
 section.main:has(.csv-analysis-page-marker) .stDownloadButton > button:hover,
 section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:hover {
-    background: #285BD0 !important;
-    border-color: #285BD0 !important;
+    background: #1D4ED8 !important;
+    border-color: #1D4ED8 !important;
     color: #FFFFFF !important;
 }
 
