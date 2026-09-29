@@ -2184,7 +2184,7 @@ elif app_mode == "Aspect Analysis":
 elif app_mode == "Explainable AI (SHAP)":
     render_hero()
     st.markdown(f'<p class="main-header">{hicon("bulb")} Explainable AI (SHAP)</p>', unsafe_allow_html=True)
-    st.caption("Understand which words influence the sentiment prediction (based on the Logistic Regression model's TF-IDF weights).")
+    st.caption("Use the Combined model for sentiment prediction, with SHAP-style word contributions from the Logistic Regression component.")
 
     sample_col3, text_col3 = st.columns(2)
     with sample_col3:
@@ -2199,7 +2199,7 @@ elif app_mode == "Explainable AI (SHAP)":
         elif not MODEL_READY:
             st.error("The sentiment model isn't loaded, so an explanation can't be generated right now.")
         else:
-            pred_label, conf = predict_sentiment(text, model_type="Logistic Regression")
+            pred_label, conf = predict_sentiment(text, model_type="Combined")
 
             # Sentiment result card — styled to match Single Review Analysis.
             with st.container(border=True):
@@ -2208,6 +2208,7 @@ elif app_mode == "Explainable AI (SHAP)":
                 st.markdown(f"## {sentiment_emoji} {pred_label.capitalize()}")
                 st.markdown(f"Confidence: **{conf:.2%}**")
                 st.progress(float(conf))
+                st.caption("Model: **Combined (Logistic Regression + DistilBERT)**")
 
             st.markdown("")
             render_explainable_section(text, pred_label, show_header=False)
