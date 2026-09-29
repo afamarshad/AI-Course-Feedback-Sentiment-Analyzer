@@ -395,95 +395,55 @@ section[data-testid="stSidebar"] div.stButton > button[kind="primary"]:hover {
 }
 
 /* =========================================================
-   MAIN PAGE BUTTONS ONLY
-   Sidebar is NOT affected
+   CSV ANALYSIS PAGE BUTTONS ONLY
+   Uses Streamlit's stable stMain test-id so these rules actually
+   match the current Streamlit DOM. Sidebar buttons are untouched.
    ========================================================= */
 
-section.main .stButton > button,
-section.main .stDownloadButton > button {
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stButton > button,
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stDownloadButton > button,
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button {
+    background-color: #2563EB !important;
     background: #2563EB !important;
     color: #FFFFFF !important;
     border: 1px solid #2563EB !important;
     border-radius: 10px !important;
     font-weight: 700 !important;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15) !important;
-    transition: all 0.2s ease-in-out !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.18) !important;
 }
 
-/* Button text */
-section.main .stButton > button p,
-section.main .stDownloadButton > button p {
-    color: #FFFFFF !important;
-}
-
-/* Material icons */
-section.main .stButton > button [data-testid="stIconMaterial"],
-section.main .stDownloadButton > button [data-testid="stIconMaterial"] {
-    color: #FFFFFF !important;
-}
-
-/* SVG icons */
-section.main .stButton > button svg,
-section.main .stDownloadButton > button svg {
+/* Force every text/icon element inside CSV-page buttons to white. */
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stButton > button *,
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stDownloadButton > button *,
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button * {
     color: #FFFFFF !important;
     fill: #FFFFFF !important;
     stroke: #FFFFFF !important;
 }
 
-/* Hover */
-section.main .stButton > button:hover,
-section.main .stDownloadButton > button:hover {
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stButton > button:hover,
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stDownloadButton > button:hover,
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:hover {
+    background-color: #1D4ED8 !important;
     background: #1D4ED8 !important;
     border-color: #1D4ED8 !important;
     color: #FFFFFF !important;
-    transform: translateY(-1px);
 }
 
-/* Hover text + icons */
-section.main .stButton > button:hover p,
-section.main .stDownloadButton > button:hover p,
-section.main .stButton > button:hover [data-testid="stIconMaterial"],
-section.main .stDownloadButton > button:hover [data-testid="stIconMaterial"] {
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stButton > button:hover *,
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stDownloadButton > button:hover *,
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:hover * {
     color: #FFFFFF !important;
     fill: #FFFFFF !important;
     stroke: #FFFFFF !important;
 }
 
-/* Disabled */
-section.main .stButton > button:disabled,
-section.main .stDownloadButton > button:disabled {
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stButton > button:disabled,
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stDownloadButton > button:disabled {
+    background-color: #94A3B8 !important;
     background: #94A3B8 !important;
     border-color: #94A3B8 !important;
     color: #FFFFFF !important;
-    opacity: 0.65 !important;
-}
-
-
-/* CSV Analysis page controls only. Sidebar controls are intentionally excluded. */
-section.main:has(.csv-analysis-page-marker) .stButton > button,
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button {
-    background: #2563EB !important;
-    color: #FFFFFF !important;
-    border: 1px solid #2563EB !important;
-    border-radius: 10px !important;
-    font-weight: 600 !important;
-}
-section.main:has(.csv-analysis-page-marker) .stButton > button p,
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button p,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button p,
-section.main:has(.csv-analysis-page-marker) .stButton > button svg,
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button svg,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button svg {
-    color: #FFFFFF !important;
-    fill: #FFFFFF !important;
-    stroke: #FFFFFF !important;
-}
-section.main:has(.csv-analysis-page-marker) .stButton > button:hover,
-section.main:has(.csv-analysis-page-marker) .stDownloadButton > button:hover,
-section.main:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:hover {
-    background: #1D4ED8 !important;
-    border-color: #1D4ED8 !important;
 }
 
 </style>
