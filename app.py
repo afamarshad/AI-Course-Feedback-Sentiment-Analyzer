@@ -436,6 +436,15 @@ section[data-testid="stMain"]:has(.csv-analysis-page-marker) [data-testid="stFil
     stroke: #FFFFFF !important;
 }
 
+/* Explicitly keep Material download icons solid white. */
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stDownloadButton > button [data-testid="stIconMaterial"],
+section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stDownloadButton > button svg {
+    color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+    stroke: #FFFFFF !important;
+    opacity: 1 !important;
+}
+
 section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stButton > button:hover,
 section[data-testid="stMain"]:has(.csv-analysis-page-marker) .stDownloadButton > button:hover,
 section[data-testid="stMain"]:has(.csv-analysis-page-marker) [data-testid="stFileUploader"] button:hover {
@@ -1997,15 +2006,15 @@ elif app_mode == "CSV Analysis":
             overall_dl_col1, overall_dl_col2 = st.columns(2)
             with overall_dl_col1:
                 st.download_button(
-                    "⬇️ Download Overall Analysis Package", overall_package,
+                    "Download Overall Analysis Package", overall_package,
                     "overall_aspect_analysis.zip", "application/zip",
-                    use_container_width=True, on_click="ignore"
+                    use_container_width=True, on_click="ignore", icon=":material/download:"
                 )
             with overall_dl_col2:
                 st.download_button(
-                    "📄 Download Overall Suggestions (TXT)", overall_suggestion_txt,
+                    "Download Overall Suggestions (TXT)", overall_suggestion_txt,
                     "overall_suggestions.txt", "text/plain",
-                    use_container_width=True, on_click="ignore"
+                    use_container_width=True, on_click="ignore", icon=":material/description:"
                 )
 
             st.markdown(f'<p class="section-header">{hicon("cap")} Course-Wise Aspect Analysis</p>', unsafe_allow_html=True)
@@ -2079,9 +2088,9 @@ elif app_mode == "CSV Analysis":
                 })
 
             st.download_button(
-                "⬇️ Download Course-Wise Analysis Package", course_package,
+                "Download Course-Wise Analysis Package", course_package,
                 "course_wise_analysis_package.zip", "application/zip",
-                use_container_width=True, on_click="ignore"
+                use_container_width=True, on_click="ignore", icon=":material/download:"
             )
 
         st.markdown(f'<p class="section-header">{hicon("clipboard")} Analysis Results</p>', unsafe_allow_html=True)
@@ -2104,7 +2113,7 @@ elif app_mode == "CSV Analysis":
 
         full_export_cols = ([course_col] if course_col else []) + [review_col, "Sentiment", "Confidence"]
         st.download_button("Download Results", df_to_csv_bytes(work_df[full_export_cols]),
-                            "analysis_results.csv", "text/csv", use_container_width=True, on_click="ignore")
+                            "analysis_results.csv", "text/csv", use_container_width=True, on_click="ignore", icon=":material/download:")
 
     render_footer()
 
