@@ -228,6 +228,33 @@ section.main [data-testid="stFileUploader"] button svg {
     opacity: 1 !important;
 }
 
+/* Full-width action buttons: center icon + text */
+section.main .stButton > button[kind="primary"] {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+section.main .stButton > button[kind="primary"] > div {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+section.main .stButton > button[kind="primary"] > div > div {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+section.main .stButton > button[kind="primary"] p {
+    text-align: center !important;
+    margin: 0 !important;
+}
+
 /* Navigation buttons */
 section[data-testid="stSidebar"] div.stButton > button {
     width: 100%;
@@ -2138,7 +2165,7 @@ elif app_mode == "Aspect Analysis":
         horizontal=True, label_visibility="collapsed", key="aspect_model_choice", index=2,
         help="Uses the same 3 models as Single Review Analysis. Kept as Combined by default so results here match Single Review's default for the same text."
     )
-    if st.button("Analyze Aspects", type="primary", icon=":material/insights:"):
+    if st.button("Analyze Aspects", type="primary", icon=":material/insights:", use_container_width=True):
         if not text.strip():
             st.warning("Please enter some review text first.")
         else:
@@ -2166,7 +2193,7 @@ elif app_mode == "Explainable AI (SHAP)":
     with text_col3:
         text = st.text_area("Enter course feedback", key="shap_text",
                              placeholder="Enter a review to generate word-level explanations.")
-    if st.button("Generate Explanation", type="primary", icon=":material/auto_awesome:"):
+    if st.button("Generate Explanation", type="primary", icon=":material/auto_awesome:", use_container_width=True):
         if not text.strip():
             st.warning("Please enter some review text first.")
         elif not MODEL_READY:
