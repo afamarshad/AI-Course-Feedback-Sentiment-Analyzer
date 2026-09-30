@@ -99,7 +99,6 @@ Powered by Hugging Face integration and translation pipelines, the application p
 
 Example:
 
-```text
 English:
 The course was very useful and easy to understand.
 
