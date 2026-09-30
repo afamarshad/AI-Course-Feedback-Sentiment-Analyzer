@@ -6,6 +6,14 @@ The application classifies feedback into **Positive, Neutral, or Negative** sent
 
 ---
 
+## 🚀 Live Demo
+
+Try the deployed application:
+
+👉 **[Course Feedback Sentiment Analyzer · Streamlit](https://ai-course-feedback-sentiment-analyzer.streamlit.app/)**
+
+---
+
 ## 📌 Project Overview
 
 Educational platforms and instructors can receive a large amount of student feedback, making it difficult to manually review every response.
