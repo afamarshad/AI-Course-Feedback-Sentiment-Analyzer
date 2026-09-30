@@ -105,7 +105,14 @@ The course was very useful and easy to understand.
 Urdu:
 یہ کورس بہت مفید ہے اور سمجھنے میں آسان ہے۔
 
+Chinese:
+这个课程非常有帮助，内容也很容易理解。
 
+Korean:
+이 과정은 매우 유익하고 이해하기 쉬웠습니다.
+
+Russian:
+Курс был очень полезным и понятным.
 
 ---
 ## 👩‍💻 Author
@@ -132,12 +139,3 @@ This project was developed as an AI/NLP application for analyzing educational co
 👉 **[Course Feedback Sentiment Analyzer · Streamlit](https://ai-course-feedback-sentiment-analyzer.streamlit.app/)**
 
 If you find the project useful, consider giving the repository a ⭐ on GitHub.
-
-Chinese:
-这个课程非常有帮助，内容也很容易理解。
-
-Korean:
-이 과정은 매우 유익하고 이해하기 쉬웠습니다.
-
-Russian:
-Курс был очень полезным и понятным.
