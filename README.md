@@ -1,8 +1,8 @@
 # 🎓 Course Feedback Sentiment Analysis
 
-A multilingual AI-powered web application built with **Python and Streamlit** for analyzing student course feedback using Natural Language Processing (NLP), Machine Learning, Transformer models, and Explainable AI.
+A multilingual AI-powered web application built with **Python and Streamlit** for analyzing student course feedback using **Natural Language Processing (NLP), Machine Learning, Transformer models, and Explainable AI**.
 
-The application classifies feedback into **Positive, Neutral, or Negative** sentiment and provides additional course-wise, aspect-based, and explainable analysis.
+The application classifies student feedback into **Positive, Neutral, or Negative** sentiment and provides additional **course-wise, aspect-based, confidence, explainable, and improvement insights**.
 
 ---
 
