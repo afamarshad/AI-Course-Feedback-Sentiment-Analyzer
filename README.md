@@ -107,30 +107,6 @@ Urdu:
 
 ---
 
-## 👩‍💻 Author
-
-**Afsah Arshad**
-
-Certified AI Practitioner | Building Intelligent Solutions with Python, Machine Learning & Deep Learning 
-
-This project was developed as an AI/NLP application for analyzing educational course feedback and demonstrating practical applications of:
-
-* Machine Learning
-* Natural Language Processing
-* Multilingual NLP
-* Transformer Models
-* Explainable AI
-* Educational Data Analysis
-
----
-
-## ⭐ Project Demo
-
-🚀 **Try the live application:**
-
-👉 **[Course Feedback Sentiment Analyzer · Streamlit](https://ai-course-feedback-sentiment-analyzer.streamlit.app/)**
-
-If you find the project useful, consider giving the repository a ⭐ on GitHub.
 
 Chinese:
 这个课程非常有帮助，内容也很容易理解。
